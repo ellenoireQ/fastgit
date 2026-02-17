@@ -20,7 +20,6 @@ async fn main() -> io::Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::new();
-    app.get_path();
     loop {
         terminal.draw(|f| draw_ui(f, &mut app))?;
         match event::read()? {

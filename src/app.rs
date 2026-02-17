@@ -1,5 +1,5 @@
 use std::env::current_dir;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Tab {
@@ -16,12 +16,16 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        Self {
+        let mut app_new = Self {
             current_tab: Tab::Tree,
             has_git: false,
             cur_dir: "".to_string(),
-        }
+        };
+        app_new.get_path();
+
+        app_new
     }
+
     pub fn next_tab(&mut self) {
         self.current_tab = match self.current_tab {
             Tab::Tree => Tab::Config,
