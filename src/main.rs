@@ -28,6 +28,7 @@ async fn main() -> io::Result<()> {
             Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
                 KeyCode::Tab => app.next_tab(),
                 KeyCode::BackTab => app.prev_tab(),
+                KeyCode::Char('s') => app.scan_git(),
                 KeyCode::Char('q') => break,
                 _ => {}
             },
