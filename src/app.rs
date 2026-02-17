@@ -1,6 +1,6 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Tab {
-    Commit,
+    Tree,
     Config,
     Diff,
 }
@@ -12,21 +12,21 @@ pub struct App {
 impl App {
     pub fn new() -> Self {
         Self {
-            current_tab: Tab::Commit,
+            current_tab: Tab::Tree,
         }
     }
     pub fn next_tab(&mut self) {
         self.current_tab = match self.current_tab {
-            Tab::Commit => Tab::Config,
+            Tab::Tree => Tab::Config,
             Tab::Config => Tab::Diff,
-            Tab::Diff => Tab::Commit,
+            Tab::Diff => Tab::Tree,
         };
     }
 
     pub fn prev_tab(&mut self) {
         self.current_tab = match self.current_tab {
-            Tab::Commit => Tab::Diff,
-            Tab::Config => Tab::Commit,
+            Tab::Tree => Tab::Diff,
+            Tab::Config => Tab::Tree,
             Tab::Diff => Tab::Config,
         };
     }
