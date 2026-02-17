@@ -20,10 +20,9 @@ async fn main() -> io::Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::new();
-
+    app.get_path();
     loop {
         terminal.draw(|f| draw_ui(f, &mut app))?;
-
         match event::read()? {
             Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
                 KeyCode::Tab => app.next_tab(),

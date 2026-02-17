@@ -1,5 +1,5 @@
 use std::env::current_dir;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Tab {
@@ -10,6 +10,7 @@ pub enum Tab {
 
 pub struct App {
     pub current_tab: Tab,
+    pub cur_dir: String,
     pub has_git: bool,
 }
 
@@ -18,6 +19,7 @@ impl App {
         Self {
             current_tab: Tab::Tree,
             has_git: false,
+            cur_dir: "".to_string(),
         }
     }
     pub fn next_tab(&mut self) {
@@ -36,13 +38,17 @@ impl App {
         };
     }
 
-    pub fn scan_git(&mut self) {
-        if let Ok(act) = current_dir() {
-            let dir = format!("{}/.git", act.display());
-            if Path::new(dir.as_str()).is_dir() {
-                return self.has_git = true;
-            }
-            self.has_git = false;
+    pub fn get_path(&mut self) {
+        if let Ok(ok) = current_dir() {
+            self.cur_dir = ok.display().to_string();
         }
+    }
+
+    pub fn scan_git(&mut self) {
+        let dir = format!("{}/.git", self.cur_dir);
+        if Path::new(dir.as_str()).is_dir() {
+            return self.has_git = true;
+        }
+        self.has_git = false;
     }
 }
