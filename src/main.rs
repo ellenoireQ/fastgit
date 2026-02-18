@@ -10,6 +10,7 @@ use ratatui::{Terminal, backend::CrosstermBackend};
 use crate::{app::App, ui::draw_ui};
 mod app;
 mod file_tree;
+mod helper;
 mod ui;
 
 #[tokio::main]

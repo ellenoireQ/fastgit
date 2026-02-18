@@ -5,7 +5,10 @@ use ratatui::{
     widgets::{Block, Borders, ListItem, Paragraph, Tabs},
 };
 
-use crate::app::{App, Tab};
+use crate::{
+    app::{App, Tab},
+    helper::helpers::Helper,
+};
 
 pub fn draw_ui(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
@@ -51,8 +54,10 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 .iter()
                 .flat_map(|f| {
                     f.tree.items.iter().map(|(path, depth, _)| {
+                        let h = Helper::default();
+
                         let indent = "  ".repeat(*depth);
-                        let symbol = format!("{:?}", f.state);
+                        let symbol = format!("{:?}", h.get_txt_icon(f.state));
                         let name = path.file_name().unwrap_or_default().to_string_lossy();
                         ListItem::new(format!("{}{}{} {}", indent, symbol, "", name))
                     })
