@@ -49,6 +49,11 @@ fn draw_tabs(f: &mut Frame, area: ratatui::layout::Rect, app: &App) {
 fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
     match app.current_tab {
         Tab::Tree => {
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(area);
+
             let items: Vec<ListItem> = app
                 .states
                 .iter()
@@ -73,7 +78,18 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 )
                 .highlight_symbol(">> ");
 
-            f.render_stateful_widget(list, area, &mut app.tree.state);
+            f.render_stateful_widget(list, chunks[0], &mut app.tree.state);
+
+            let branches: Vec<ListItem> = app
+                .branches
+                .iter()
+                .map(|b| ListItem::new(b.as_str()))
+                .collect();
+
+            let branch_list = ratatui::widgets::List::new(branches)
+                .block(Block::default().borders(Borders::ALL).title("Branches"));
+
+            f.render_widget(branch_list, chunks[1]);
         }
         Tab::Config => {
             let block = Block::default().borders(Borders::ALL).title("Config");

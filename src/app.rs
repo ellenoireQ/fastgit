@@ -18,6 +18,7 @@ pub struct App {
     pub has_git: bool,
     pub tree: FileTree,
     pub states: Vec<States>,
+    pub branches: Vec<String>,
 }
 #[derive(Debug, Clone)]
 pub struct States {
@@ -33,6 +34,7 @@ impl App {
             cur_dir: "".to_string(),
             tree: FileTree::new(std::path::PathBuf::from(".")),
             states: vec![],
+            branches: vec![],
         };
         app_new.get_path();
         app_new.scan_git();
@@ -55,6 +57,16 @@ impl App {
                             tree: app_new.tree.clone(),
                         };
                         app_new.states.push(vu);
+                    }
+                }
+
+                if let Ok(branches) = repo.branches(None) {
+                    for branch in branches {
+                        if let Ok((branch, _)) = branch {
+                            if let Ok(Some(name)) = branch.name() {
+                                app_new.branches.push(name.to_string());
+                            }
+                        }
                     }
                 }
             }
