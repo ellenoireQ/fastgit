@@ -47,14 +47,15 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
     match app.current_tab {
         Tab::Tree => {
             let items: Vec<ListItem> = app
-                .tree
-                .items
+                .states
                 .iter()
-                .map(|(path, depth, is_dir)| {
-                    let indent = "  ".repeat(*depth);
-                    let symbol = if *is_dir { "📁" } else { "📄" };
-                    let name = path.file_name().unwrap_or_default().to_string_lossy();
-                    ListItem::new(format!("{}{}{} {}", indent, symbol, "", name))
+                .flat_map(|f| {
+                    f.tree.items.iter().map(|(path, depth, _)| {
+                        let indent = "  ".repeat(*depth);
+                        let symbol = format!("{:?}", f.state);
+                        let name = path.file_name().unwrap_or_default().to_string_lossy();
+                        ListItem::new(format!("{}{}{} {}", indent, symbol, "", name))
+                    })
                 })
                 .collect();
 

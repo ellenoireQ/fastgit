@@ -1,5 +1,7 @@
 use std::env::current_dir;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+use git2::Status;
 
 use crate::file_tree::FileTree;
 
@@ -15,6 +17,12 @@ pub struct App {
     pub cur_dir: String,
     pub has_git: bool,
     pub tree: FileTree,
+    pub states: Vec<States>,
+}
+#[derive(Debug, Clone)]
+pub struct States {
+    pub state: Status,
+    pub tree: FileTree,
 }
 
 impl App {
@@ -24,6 +32,7 @@ impl App {
             has_git: false,
             cur_dir: "".to_string(),
             tree: FileTree::new(std::path::PathBuf::from(".")),
+            states: vec![],
         };
         app_new.get_path();
         app_new.scan_git();
@@ -35,7 +44,17 @@ impl App {
                         .iter()
                         .filter_map(|e| e.path().map(|p| std::path::PathBuf::from(p)))
                         .collect();
+
                     app_new.tree.populate_from_paths(paths);
+
+                    for entry in statuses.iter() {
+                        let status = entry.status();
+                        let vu = States {
+                            state: status,
+                            tree: app_new.tree.clone(),
+                        };
+                        app_new.states.push(vu);
+                    }
                 }
             }
         }

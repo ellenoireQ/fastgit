@@ -59,6 +59,7 @@ impl FileNode {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct FileTree {
     pub root: FileNode,
     pub state: ListState,
