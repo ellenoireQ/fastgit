@@ -9,6 +9,7 @@ use ratatui::{Terminal, backend::CrosstermBackend};
 
 use crate::{app::App, ui::draw_ui};
 mod app;
+mod file_tree;
 mod ui;
 
 #[tokio::main]
@@ -27,6 +28,10 @@ async fn main() -> io::Result<()> {
                 KeyCode::Tab => app.next_tab(),
                 KeyCode::BackTab => app.prev_tab(),
                 KeyCode::Char('s') => app.scan_git(),
+                KeyCode::Up => app.tree.previous(),
+                KeyCode::Down => app.tree.next(),
+                KeyCode::Left => app.tree.collapse_or_parent(),
+                KeyCode::Right => app.tree.toggle_expand(),
                 KeyCode::Char('q') => break,
                 _ => {}
             },

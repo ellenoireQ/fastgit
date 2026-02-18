@@ -1,6 +1,8 @@
 use std::env::current_dir;
 use std::path::Path;
 
+use crate::file_tree::FileTree;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Tab {
     Tree,
@@ -12,6 +14,7 @@ pub struct App {
     pub current_tab: Tab,
     pub cur_dir: String,
     pub has_git: bool,
+    pub tree: FileTree,
 }
 
 impl App {
@@ -20,8 +23,22 @@ impl App {
             current_tab: Tab::Tree,
             has_git: false,
             cur_dir: "".to_string(),
+            tree: FileTree::new(std::path::PathBuf::from(".")),
         };
         app_new.get_path();
+        app_new.scan_git();
+
+        if app_new.has_git {
+            if let Ok(repo) = git2::Repository::open(&app_new.cur_dir) {
+                if let Ok(statuses) = repo.statuses(None) {
+                    let paths: Vec<std::path::PathBuf> = statuses
+                        .iter()
+                        .filter_map(|e| e.path().map(|p| std::path::PathBuf::from(p)))
+                        .collect();
+                    app_new.tree.populate_from_paths(paths);
+                }
+            }
+        }
 
         app_new
     }

@@ -2,7 +2,7 @@ use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Paragraph, Tabs},
+    widgets::{Block, Borders, ListItem, Paragraph, Tabs},
 };
 
 use crate::app::{App, Tab};
@@ -43,16 +43,41 @@ fn draw_tabs(f: &mut Frame, area: ratatui::layout::Rect, app: &App) {
     f.render_widget(tabs, area);
 }
 
-fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &App) {
-    let title = match app.current_tab {
-        Tab::Tree => "Tree",
-        Tab::Config => "Config",
-        Tab::Diff => "Diff",
-    };
+fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
+    match app.current_tab {
+        Tab::Tree => {
+            let items: Vec<ListItem> = app
+                .tree
+                .items
+                .iter()
+                .map(|(path, depth, is_dir)| {
+                    let indent = "  ".repeat(*depth);
+                    let symbol = if *is_dir { "📁" } else { "📄" };
+                    let name = path.file_name().unwrap_or_default().to_string_lossy();
+                    ListItem::new(format!("{}{}{} {}", indent, symbol, "", name))
+                })
+                .collect();
 
-    let block = Block::default().borders(Borders::ALL).title(title);
+            let list = ratatui::widgets::List::new(items)
+                .block(Block::default().borders(Borders::ALL).title("Tree"))
+                .highlight_style(
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                )
+                .highlight_symbol(">> ");
 
-    f.render_widget(block, area);
+            f.render_stateful_widget(list, area, &mut app.tree.state);
+        }
+        Tab::Config => {
+            let block = Block::default().borders(Borders::ALL).title("Config");
+            f.render_widget(block, area);
+        }
+        Tab::Diff => {
+            let block = Block::default().borders(Borders::ALL).title("Diff");
+            f.render_widget(block, area);
+        }
+    }
 }
 
 fn draw_footer(f: &mut Frame, area: ratatui::layout::Rect) {
