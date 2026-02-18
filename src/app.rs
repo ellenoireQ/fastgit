@@ -42,6 +42,7 @@ impl App {
                 if let Ok(statuses) = repo.statuses(None) {
                     let paths: Vec<std::path::PathBuf> = statuses
                         .iter()
+                        .filter(|e| !e.status().contains(Status::IGNORED))
                         .filter_map(|e| e.path().map(|p| std::path::PathBuf::from(p)))
                         .collect();
 
