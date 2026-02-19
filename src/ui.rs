@@ -51,7 +51,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
         Tab::Tree => {
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
                 .split(area);
 
             let items: Vec<ListItem> = app
