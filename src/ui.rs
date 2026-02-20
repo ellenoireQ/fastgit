@@ -69,6 +69,10 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 })
                 .collect();
 
+            if items.is_empty() {
+                let empty = Paragraph::new("Working tree is clean");
+                f.render_widget(empty, area);
+            }
             let list = ratatui::widgets::List::new(items)
                 .block(Block::default().borders(Borders::ALL).title("Tree"))
                 .highlight_style(
