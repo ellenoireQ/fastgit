@@ -69,21 +69,6 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 })
                 .collect();
 
-            if items.is_empty() {
-                let empty = Paragraph::new("Working tree is clean");
-                f.render_widget(empty, area);
-            }
-            let list = ratatui::widgets::List::new(items)
-                .block(Block::default().borders(Borders::ALL).title("Tree"))
-                .highlight_style(
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                )
-                .highlight_symbol(">> ");
-
-            f.render_stateful_widget(list, chunks[0], &mut app.tree.state);
-
             let branches: Vec<ListItem> = app
                 .branches
                 .iter()
@@ -92,6 +77,23 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
 
             let branch_list = ratatui::widgets::List::new(branches)
                 .block(Block::default().borders(Borders::ALL).title("Branches"));
+
+            if items.is_empty() {
+                let empty = Paragraph::new("Working tree is clean")
+                    .block(Block::default().borders(Borders::ALL).title("Tree"));
+                f.render_widget(empty, chunks[0]);
+            } else {
+                let list = ratatui::widgets::List::new(items)
+                    .block(Block::default().borders(Borders::ALL).title("Tree"))
+                    .highlight_style(
+                        Style::default()
+                            .fg(Color::Yellow)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                    .highlight_symbol(">> ");
+
+                f.render_stateful_widget(list, chunks[0], &mut app.tree.state);
+            }
 
             f.render_widget(branch_list, chunks[1]);
         }
