@@ -54,18 +54,34 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
                 .split(area);
 
-            let items: Vec<ListItem> = app
-                .states
-                .iter()
-                .flat_map(|f| {
-                    f.tree.items.iter().map(|(path, depth, _)| {
-                        let h = Helper::default();
+            let h = Helper::default();
 
-                        let indent = "  ".repeat(*depth);
-                        let symbol = format!("{:?}", h.get_txt_icon(f.state));
-                        let name = path.file_name().unwrap_or_default().to_string_lossy();
-                        ListItem::new(format!("{}{}{} {}", indent, symbol, "", name))
-                    })
+            let items: Vec<ListItem> = app
+                .tree
+                .items
+                .iter()
+                .map(|(path, depth, is_dir)| {
+                    let indent = "  ".repeat(*depth);
+                    let name = path.file_name().unwrap_or_default().to_string_lossy();
+
+                    if *is_dir {
+                        let text = format!("{}{}/", indent, name);
+                        ListItem::new(text).style(
+                            Style::default()
+                                .fg(Color::Blue)
+                                .add_modifier(Modifier::BOLD),
+                        )
+                    } else {
+                        let lookup_path = path.strip_prefix(".").unwrap_or(path);
+                        let (icon, color) = if let Some(status) = app.file_statuses.get(lookup_path)
+                        {
+                            (h.get_txt_icon(*status), h.get_status_color(*status))
+                        } else {
+                            ("??", Color::White)
+                        };
+                        let text = format!("{}{} {}", indent, icon, name);
+                        ListItem::new(text).style(Style::default().fg(color))
+                    }
                 })
                 .collect();
 
@@ -87,10 +103,10 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                     .block(Block::default().borders(Borders::ALL).title("Tree"))
                     .highlight_style(
                         Style::default()
-                            .fg(Color::Yellow)
+                            .bg(Color::DarkGray)
                             .add_modifier(Modifier::BOLD),
                     )
-                    .highlight_symbol(">> ");
+                    .highlight_symbol("▶ ");
 
                 f.render_stateful_widget(list, chunks[0], &mut app.tree.state);
             }

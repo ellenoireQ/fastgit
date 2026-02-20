@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env::current_dir;
 use std::path::{Path, PathBuf};
 
@@ -17,13 +18,8 @@ pub struct App {
     pub cur_dir: String,
     pub has_git: bool,
     pub tree: FileTree,
-    pub states: Vec<States>,
+    pub file_statuses: HashMap<PathBuf, Status>,
     pub branches: Vec<String>,
-}
-#[derive(Debug, Clone)]
-pub struct States {
-    pub state: Status,
-    pub tree: FileTree,
 }
 
 impl App {
@@ -33,7 +29,7 @@ impl App {
             has_git: false,
             cur_dir: "".to_string(),
             tree: FileTree::new(std::path::PathBuf::from(".")),
-            states: vec![],
+            file_statuses: HashMap::new(),
             branches: vec![],
         };
         app_new.get_path();
@@ -42,22 +38,20 @@ impl App {
         if app_new.has_git {
             if let Ok(repo) = git2::Repository::open(&app_new.cur_dir) {
                 if let Ok(statuses) = repo.statuses(None) {
-                    let paths: Vec<std::path::PathBuf> = statuses
-                        .iter()
-                        .filter(|e| !e.status().contains(Status::IGNORED))
-                        .filter_map(|e| e.path().map(|p| std::path::PathBuf::from(p)))
-                        .collect();
-
-                    app_new.tree.populate_from_paths(paths);
+                    let mut paths: Vec<std::path::PathBuf> = Vec::new();
 
                     for entry in statuses.iter() {
-                        let status = entry.status();
-                        let vu = States {
-                            state: status,
-                            tree: app_new.tree.clone(),
-                        };
-                        app_new.states.push(vu);
+                        if entry.status().contains(Status::IGNORED) {
+                            continue;
+                        }
+                        if let Some(p) = entry.path() {
+                            let path = std::path::PathBuf::from(p);
+                            app_new.file_statuses.insert(path.clone(), entry.status());
+                            paths.push(path);
+                        }
                     }
+
+                    app_new.tree.populate_from_paths(paths);
                 }
 
                 if let Ok(branches) = repo.branches(None) {
