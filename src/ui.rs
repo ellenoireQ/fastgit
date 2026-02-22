@@ -2,11 +2,12 @@ use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, ListItem, Paragraph, Tabs},
+    text::{Line, Span},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
 };
 
 use crate::{
-    app::{App, Tab},
+    app::{App, DiffLineKind, Tab},
     helper::helpers::Helper,
 };
 
@@ -118,8 +119,52 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
             f.render_widget(block, area);
         }
         Tab::Diff => {
-            let block = Block::default().borders(Borders::ALL).title("Diff");
-            f.render_widget(block, area);
+            let title = match &app.selected_file {
+                Some(p) => format!("Diff — {}", p.display()),
+                None => "Diff — No file selected".to_string(),
+            };
+
+            if app.diff_content.is_empty() {
+                let msg = if app.selected_file.is_some() {
+                    "No changes detected for this file"
+                } else {
+                    "Select a file in Tree tab and press Enter"
+                };
+                let empty =
+                    Paragraph::new(msg).block(Block::default().borders(Borders::ALL).title(title));
+                f.render_widget(empty, area);
+            } else {
+                let visible_lines: Vec<ListItem> = app
+                    .diff_content
+                    .iter()
+                    .skip(app.diff_scroll)
+                    .map(|dl| {
+                        let color = match dl.kind {
+                            DiffLineKind::Add => Color::Green,
+                            DiffLineKind::Delete => Color::Red,
+                            DiffLineKind::Header => Color::Yellow,
+                            DiffLineKind::Context => Color::White,
+                        };
+
+                        let prefix = match dl.kind {
+                            DiffLineKind::Add => "+ ",
+                            DiffLineKind::Delete => "- ",
+                            DiffLineKind::Header => "",
+                            DiffLineKind::Context => "  ",
+                        };
+
+                        ListItem::new(Line::from(Span::styled(
+                            format!("{}{}", prefix, dl.content),
+                            Style::default().fg(color),
+                        )))
+                    })
+                    .collect();
+
+                let diff_list = List::new(visible_lines)
+                    .block(Block::default().borders(Borders::ALL).title(title));
+
+                f.render_widget(diff_list, area);
+            }
         }
     }
 }
