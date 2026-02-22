@@ -37,6 +37,7 @@ pub struct App {
     pub selected_file: Option<PathBuf>,
     pub diff_content: Vec<DiffLine>,
     pub diff_scroll: usize,
+    pub focused: bool,
 }
 
 impl App {
@@ -51,6 +52,7 @@ impl App {
             selected_file: None,
             diff_content: vec![],
             diff_scroll: 0,
+            focused: false,
         };
         app_new.get_path();
         app_new.scan_git();

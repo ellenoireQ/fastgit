@@ -33,21 +33,23 @@ async fn main() -> io::Result<()> {
                 KeyCode::BackTab => app.prev_tab(),
                 KeyCode::Char('s') => app.scan_git(),
                 KeyCode::Enter => {
-                    if app.current_tab == Tab::Tree {
-                        app.select_file();
-                        app.current_tab = Tab::Diff;
+                    app.select_file();
+                    app.focused = true
+                }
+                KeyCode::Up => {
+                    if app.focused {
+                        app.diff_scroll_up();
+                    } else {
+                        app.tree.previous();
                     }
                 }
-                KeyCode::Up => match app.current_tab {
-                    Tab::Tree => app.tree.previous(),
-                    Tab::Diff => app.diff_scroll_up(),
-                    _ => {}
-                },
-                KeyCode::Down => match app.current_tab {
-                    Tab::Tree => app.tree.next(),
-                    Tab::Diff => app.diff_scroll_down(),
-                    _ => {}
-                },
+                KeyCode::Down => {
+                    if app.focused {
+                        app.diff_scroll_down();
+                    } else {
+                        app.tree.next();
+                    }
+                }
                 KeyCode::Left => app.tree.collapse_or_parent(),
                 KeyCode::Right => app.tree.toggle_expand(),
                 KeyCode::Char('q') => break,
