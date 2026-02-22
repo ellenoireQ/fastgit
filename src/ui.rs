@@ -32,7 +32,6 @@ fn draw_tabs(f: &mut Frame, area: ratatui::layout::Rect, app: &App) {
     let selected = match app.current_tab {
         Tab::Tree => 0,
         Tab::Config => 1,
-        Tab::Diff => 2,
     };
 
     let tabs = Tabs::new(titles)
@@ -166,54 +165,6 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
         Tab::Config => {
             let block = Block::default().borders(Borders::ALL).title("Config");
             f.render_widget(block, area);
-        }
-        Tab::Diff => {
-            let title = match &app.selected_file {
-                Some(p) => format!("Diff — {}", p.display()),
-                None => "Diff — No file selected".to_string(),
-            };
-
-            if app.diff_content.is_empty() {
-                let msg = if app.selected_file.is_some() {
-                    "No changes detected for this file"
-                } else {
-                    "Select a file in Tree tab and press Enter"
-                };
-                let empty =
-                    Paragraph::new(msg).block(Block::default().borders(Borders::ALL).title(title));
-                f.render_widget(empty, area);
-            } else {
-                let visible_lines: Vec<ListItem> = app
-                    .diff_content
-                    .iter()
-                    .skip(app.diff_scroll)
-                    .map(|dl| {
-                        let color = match dl.kind {
-                            DiffLineKind::Add => Color::Green,
-                            DiffLineKind::Delete => Color::Red,
-                            DiffLineKind::Header => Color::Yellow,
-                            DiffLineKind::Context => Color::White,
-                        };
-
-                        let prefix = match dl.kind {
-                            DiffLineKind::Add => "+ ",
-                            DiffLineKind::Delete => "- ",
-                            DiffLineKind::Header => "",
-                            DiffLineKind::Context => "  ",
-                        };
-
-                        ListItem::new(Line::from(Span::styled(
-                            format!("{}{}", prefix, dl.content),
-                            Style::default().fg(color),
-                        )))
-                    })
-                    .collect();
-
-                let diff_list = List::new(visible_lines)
-                    .block(Block::default().borders(Borders::ALL).title(title));
-
-                f.render_widget(diff_list, area);
-            }
         }
     }
 }

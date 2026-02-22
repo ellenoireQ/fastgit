@@ -10,7 +10,6 @@ use crate::file_tree::FileTree;
 pub enum Tab {
     Tree,
     Config,
-    Diff,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -176,16 +175,14 @@ impl App {
     pub fn next_tab(&mut self) {
         self.current_tab = match self.current_tab {
             Tab::Tree => Tab::Config,
-            Tab::Config => Tab::Diff,
-            Tab::Diff => Tab::Tree,
+            Tab::Config => Tab::Tree,
         };
     }
 
     pub fn prev_tab(&mut self) {
         self.current_tab = match self.current_tab {
-            Tab::Tree => Tab::Diff,
+            Tab::Tree => Tab::Config,
             Tab::Config => Tab::Tree,
-            Tab::Diff => Tab::Config,
         };
     }
 
