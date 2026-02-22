@@ -50,10 +50,15 @@ fn draw_tabs(f: &mut Frame, area: ratatui::layout::Rect, app: &App) {
 fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
     match app.current_tab {
         Tab::Tree => {
-            let chunks = Layout::default()
+            let rows = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(area);
+
+            let top_cols = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
-                .split(area);
+                .split(rows[0]);
 
             let h = Helper::default();
 
@@ -98,7 +103,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
             if items.is_empty() {
                 let empty = Paragraph::new("Working tree is clean")
                     .block(Block::default().borders(Borders::ALL).title("Tree"));
-                f.render_widget(empty, chunks[0]);
+                f.render_widget(empty, top_cols[0]);
             } else {
                 let list = ratatui::widgets::List::new(items)
                     .block(Block::default().borders(Borders::ALL).title("Tree"))
@@ -109,10 +114,54 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                     )
                     .highlight_symbol("▶ ");
 
-                f.render_stateful_widget(list, chunks[0], &mut app.tree.state);
+                f.render_stateful_widget(list, top_cols[0], &mut app.tree.state);
             }
 
-            f.render_widget(branch_list, chunks[1]);
+            f.render_widget(branch_list, top_cols[1]);
+
+            let diff_title = match &app.selected_file {
+                Some(p) => format!("Diff — {}", p.display()),
+                None => "Diff — No file selected".to_string(),
+            };
+
+            if app.diff_content.is_empty() {
+                let msg = if app.selected_file.is_some() {
+                    "No changes detected for this file"
+                } else {
+                    "Select a file and press Enter"
+                };
+                let empty = Paragraph::new(msg)
+                    .block(Block::default().borders(Borders::ALL).title(diff_title));
+                f.render_widget(empty, rows[1]);
+            } else {
+                let visible_lines: Vec<ListItem> = app
+                    .diff_content
+                    .iter()
+                    .skip(app.diff_scroll)
+                    .map(|dl| {
+                        let color = match dl.kind {
+                            DiffLineKind::Add => Color::Green,
+                            DiffLineKind::Delete => Color::Red,
+                            DiffLineKind::Header => Color::Yellow,
+                            DiffLineKind::Context => Color::White,
+                        };
+                        let prefix = match dl.kind {
+                            DiffLineKind::Add => "+ ",
+                            DiffLineKind::Delete => "- ",
+                            DiffLineKind::Header => "",
+                            DiffLineKind::Context => "  ",
+                        };
+                        ListItem::new(Line::from(Span::styled(
+                            format!("{}{}", prefix, dl.content),
+                            Style::default().fg(color),
+                        )))
+                    })
+                    .collect();
+
+                let diff_list = List::new(visible_lines)
+                    .block(Block::default().borders(Borders::ALL).title(diff_title));
+                f.render_widget(diff_list, rows[1]);
+            }
         }
         Tab::Config => {
             let block = Block::default().borders(Borders::ALL).title("Config");
