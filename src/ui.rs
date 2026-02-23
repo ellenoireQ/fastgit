@@ -109,7 +109,13 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
 
             if items.is_empty() {
                 let empty = Paragraph::new("Working tree is clean")
-                    .block(Block::default().borders(Borders::ALL).title("Tree"));
+                    .block(Block::default().borders(Borders::ALL).title("Tree"))
+                    .style(if app.window_index == 0 {
+                        Style::new().yellow()
+                    } else {
+                        Style::new().white()
+                    });
+
                 f.render_widget(empty, top_cols[0]);
             } else {
                 let list = ratatui::widgets::List::new(items)
