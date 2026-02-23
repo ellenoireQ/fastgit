@@ -79,7 +79,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                         let text = format!("{}{}/", indent, name);
                         ListItem::new(text).style(
                             Style::default()
-                                .fg(Color::Blue)
+                                .fg(Color::White)
                                 .add_modifier(Modifier::BOLD),
                         )
                     } else {
