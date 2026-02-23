@@ -99,14 +99,6 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 .map(|b| ListItem::new(b.as_str()))
                 .collect();
 
-            let branch_list = ratatui::widgets::List::new(branches)
-                .block(Block::default().borders(Borders::ALL).title("Branches"))
-                .style(if app.window_index == 1 {
-                    Style::new().yellow()
-                } else {
-                    Style::new().white()
-                });
-
             if items.is_empty() {
                 let empty = Paragraph::new("Working tree is clean")
                     .block(Block::default().borders(Borders::ALL).title("Tree"))
@@ -134,6 +126,14 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
 
                 f.render_stateful_widget(list, top_cols[0], &mut app.tree.state);
             }
+
+            let branch_list = ratatui::widgets::List::new(branches)
+                .block(Block::default().borders(Borders::ALL).title("Branches"))
+                .style(if app.window_index == 1 {
+                    Style::new().yellow()
+                } else {
+                    Style::new().white()
+                });
 
             f.render_widget(branch_list, top_cols[1]);
 
