@@ -6,7 +6,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Tabs},
 };
 
 use crate::{
@@ -101,7 +101,12 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
 
             if items.is_empty() {
                 let empty = Paragraph::new("Working tree is clean")
-                    .block(Block::default().borders(Borders::ALL).title("[1]-Tree"))
+                    .block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Rounded)
+                            .title("[1]-Tree"),
+                    )
                     .style(if app.window_index == 0 {
                         Style::new().yellow().bold()
                     } else {
@@ -111,7 +116,12 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 f.render_widget(empty, top_cols[0]);
             } else {
                 let list = ratatui::widgets::List::new(items)
-                    .block(Block::default().borders(Borders::ALL).title("[1]-Tree"))
+                    .block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Rounded)
+                            .title("[1]-Tree"),
+                    )
                     .highlight_style(
                         Style::default()
                             .bg(Color::DarkGray)
@@ -128,7 +138,12 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
             }
 
             let branch_list = ratatui::widgets::List::new(branches)
-                .block(Block::default().borders(Borders::ALL).title("[2]-Branches"))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Rounded)
+                        .title("[2]-Branches"),
+                )
                 .style(if app.window_index == 1 {
                     Style::new().yellow().bold()
                 } else {
@@ -149,7 +164,12 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                     "Select a file and press Enter"
                 };
                 let empty = Paragraph::new(msg)
-                    .block(Block::default().borders(Borders::ALL).title(diff_title))
+                    .block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Rounded)
+                            .title(diff_title),
+                    )
                     .style(if app.window_index == 2 {
                         Style::new().yellow().bold()
                     } else {
@@ -181,8 +201,12 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                     })
                     .collect();
 
-                let diff_list = List::new(visible_lines)
-                    .block(Block::default().borders(Borders::ALL).title(diff_title));
+                let diff_list = List::new(visible_lines).block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Rounded)
+                        .title(diff_title),
+                );
 
                 f.render_widget(diff_list, rows[1]);
             }
@@ -195,8 +219,11 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
 }
 
 fn draw_footer(f: &mut Frame, area: ratatui::layout::Rect) {
-    let footer = Paragraph::new("q: Quit | Tab: Next | Shift+Tab: Prev")
-        .block(Block::default().borders(Borders::ALL));
+    let footer = Paragraph::new("q: Quit | Tab: Next | Shift+Tab: Prev").block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded),
+    );
 
     f.render_widget(footer, area);
 }
