@@ -59,7 +59,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
                 .split(rows[0]);
 
-            let h = Helper::default();
+            let h = Helper;
 
             let items: Vec<ListItem> = app
                 .tree
