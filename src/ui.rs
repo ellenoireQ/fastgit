@@ -27,7 +27,7 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
 }
 
 fn draw_tabs(f: &mut Frame, area: ratatui::layout::Rect, app: &App) {
-    let titles = vec!["Tree", "Config"];
+    let titles = vec!["Worktree", "Config"];
 
     let selected = match app.current_tab {
         Tab::Tree => 0,
