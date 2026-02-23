@@ -101,7 +101,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
 
             if items.is_empty() {
                 let empty = Paragraph::new("Working tree is clean")
-                    .block(Block::default().borders(Borders::ALL).title("Tree"))
+                    .block(Block::default().borders(Borders::ALL).title("[1]-Tree"))
                     .style(if app.window_index == 0 {
                         Style::new().yellow()
                     } else {
@@ -111,7 +111,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 f.render_widget(empty, top_cols[0]);
             } else {
                 let list = ratatui::widgets::List::new(items)
-                    .block(Block::default().borders(Borders::ALL).title("Tree"))
+                    .block(Block::default().borders(Borders::ALL).title("[1]-Tree"))
                     .highlight_style(
                         Style::default()
                             .bg(Color::DarkGray)
@@ -128,7 +128,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
             }
 
             let branch_list = ratatui::widgets::List::new(branches)
-                .block(Block::default().borders(Borders::ALL).title("Branches"))
+                .block(Block::default().borders(Borders::ALL).title("[2]-Branches"))
                 .style(if app.window_index == 1 {
                     Style::new().yellow()
                 } else {
@@ -138,8 +138,8 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
             f.render_widget(branch_list, top_cols[1]);
 
             let diff_title = match &app.selected_file {
-                Some(p) => format!("Diff — {}", p.display()),
-                None => "Diff — No file selected".to_string(),
+                Some(p) => format!("[3]-Diff — {}", p.display()),
+                None => "[3]-Diff — No file selected".to_string(),
             };
 
             if app.diff_content.is_empty() {
