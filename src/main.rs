@@ -29,7 +29,7 @@ async fn main() -> io::Result<()> {
         terminal.draw(|f| draw_ui(f, &mut app))?;
         match event::read()? {
             Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
-                KeyCode::Tab => app.next_tab(),
+                KeyCode::Tab => app.increase_window(),
                 KeyCode::BackTab => app.prev_tab(),
                 KeyCode::Char('s') => app.scan_git(),
                 KeyCode::Enter => {

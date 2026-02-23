@@ -192,6 +192,13 @@ impl App {
         };
     }
 
+    pub fn increase_window(&mut self) {
+        if self.window_index >= 2 {
+            return self.window_index = 0;
+        }
+        self.window_index += 1;
+    }
+
     pub fn get_path(&mut self) {
         if let Ok(ok) = current_dir() {
             self.cur_dir = ok.display().to_string();
