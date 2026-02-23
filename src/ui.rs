@@ -14,6 +14,9 @@ use crate::{
     helper::helpers::Helper,
 };
 
+const BORDER_STYLE: Style = Style::new().yellow().bold();
+const BORDER_DEFAULT_STYLE: Style = Style::new().white().bold();
+
 pub fn draw_ui(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -108,9 +111,9 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                             .title("[1]-Tree"),
                     )
                     .style(if app.window_index == 0 {
-                        Style::new().yellow().bold()
+                        BORDER_STYLE
                     } else {
-                        Style::new().white().bold()
+                        BORDER_DEFAULT_STYLE
                     });
 
                 f.render_widget(empty, top_cols[0]);
@@ -129,9 +132,9 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                     )
                     .highlight_symbol("▶ ")
                     .style(if app.window_index == 0 {
-                        Style::new().yellow().bold()
+                        BORDER_STYLE
                     } else {
-                        Style::new().white().bold()
+                        BORDER_DEFAULT_STYLE
                     });
 
                 f.render_stateful_widget(list, top_cols[0], &mut app.tree.state);
@@ -145,9 +148,9 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                         .title("[2]-Branches"),
                 )
                 .style(if app.window_index == 1 {
-                    Style::new().yellow().bold()
+                    BORDER_STYLE
                 } else {
-                    Style::new().white().bold()
+                    BORDER_DEFAULT_STYLE
                 });
 
             f.render_widget(branch_list, top_cols[1]);
@@ -171,9 +174,9 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                             .title(diff_title),
                     )
                     .style(if app.window_index == 2 {
-                        Style::new().yellow().bold()
+                        BORDER_STYLE
                     } else {
-                        Style::new().white().bold()
+                        BORDER_DEFAULT_STYLE
                     });
                 f.render_widget(empty, rows[1]);
             } else {
