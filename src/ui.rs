@@ -103,9 +103,9 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 let empty = Paragraph::new("Working tree is clean")
                     .block(Block::default().borders(Borders::ALL).title("[1]-Tree"))
                     .style(if app.window_index == 0 {
-                        Style::new().yellow()
+                        Style::new().yellow().bold()
                     } else {
-                        Style::new().white()
+                        Style::new().white().bold()
                     });
 
                 f.render_widget(empty, top_cols[0]);
@@ -119,9 +119,9 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                     )
                     .highlight_symbol("▶ ")
                     .style(if app.window_index == 0 {
-                        Style::new().yellow()
+                        Style::new().yellow().bold()
                     } else {
-                        Style::new().white()
+                        Style::new().white().bold()
                     });
 
                 f.render_stateful_widget(list, top_cols[0], &mut app.tree.state);
@@ -130,9 +130,9 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
             let branch_list = ratatui::widgets::List::new(branches)
                 .block(Block::default().borders(Borders::ALL).title("[2]-Branches"))
                 .style(if app.window_index == 1 {
-                    Style::new().yellow()
+                    Style::new().yellow().bold()
                 } else {
-                    Style::new().white()
+                    Style::new().white().bold()
                 });
 
             f.render_widget(branch_list, top_cols[1]);
@@ -151,9 +151,9 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 let empty = Paragraph::new(msg)
                     .block(Block::default().borders(Borders::ALL).title(diff_title))
                     .style(if app.window_index == 2 {
-                        Style::new().yellow()
+                        Style::new().yellow().bold()
                     } else {
-                        Style::new().white()
+                        Style::new().white().bold()
                     });
                 f.render_widget(empty, rows[1]);
             } else {
