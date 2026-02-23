@@ -37,6 +37,7 @@ pub struct App {
     pub diff_content: Vec<DiffLine>,
     pub diff_scroll: usize,
     pub focused: bool,
+    pub window_index: u32,
 }
 
 impl App {
@@ -52,6 +53,11 @@ impl App {
             diff_content: vec![],
             diff_scroll: 0,
             focused: false,
+
+            // 0 => Tree
+            // 1 => Branch
+            // 2 => Diff
+            window_index: 0,
         };
         app_new.get_path();
         app_new.scan_git();
