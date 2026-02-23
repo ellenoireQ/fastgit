@@ -57,7 +57,11 @@ async fn main() -> io::Result<()> {
                 }
                 KeyCode::Left => app.tree.collapse_or_parent(),
                 KeyCode::Right => app.tree.toggle_expand(),
+                // For testing purpose
+                KeyCode::Char('u') => app.window_index += 1,
+
                 KeyCode::Char('q') => break,
+
                 _ => {}
             },
             _ => {}

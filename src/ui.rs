@@ -97,7 +97,12 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 .collect();
 
             let branch_list = ratatui::widgets::List::new(branches)
-                .block(Block::default().borders(Borders::ALL).title("Branches"));
+                .block(Block::default().borders(Borders::ALL).title("Branches"))
+                .style(if app.window_index == 1 {
+                    Style::new().yellow()
+                } else {
+                    Style::new().white()
+                });
 
             if items.is_empty() {
                 let empty = Paragraph::new("Working tree is clean")
@@ -111,7 +116,12 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                             .bg(Color::DarkGray)
                             .add_modifier(Modifier::BOLD),
                     )
-                    .highlight_symbol("▶ ");
+                    .highlight_symbol("▶ ")
+                    .style(if app.window_index == 0 {
+                        Style::new().yellow()
+                    } else {
+                        Style::new().white()
+                    });
 
                 f.render_stateful_widget(list, top_cols[0], &mut app.tree.state);
             }
@@ -130,7 +140,12 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                     "Select a file and press Enter"
                 };
                 let empty = Paragraph::new(msg)
-                    .block(Block::default().borders(Borders::ALL).title(diff_title));
+                    .block(Block::default().borders(Borders::ALL).title(diff_title))
+                    .style(if app.window_index == 2 {
+                        Style::new().yellow()
+                    } else {
+                        Style::new().white()
+                    });
                 f.render_widget(empty, rows[1]);
             } else {
                 let visible_lines: Vec<ListItem> = app
@@ -159,6 +174,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
 
                 let diff_list = List::new(visible_lines)
                     .block(Block::default().borders(Borders::ALL).title(diff_title));
+
                 f.render_widget(diff_list, rows[1]);
             }
         }
