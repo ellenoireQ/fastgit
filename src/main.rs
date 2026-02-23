@@ -50,6 +50,11 @@ async fn main() -> io::Result<()> {
                         app.tree.next();
                     }
                 }
+                KeyCode::Esc => {
+                    if app.focused {
+                        app.focused = false;
+                    }
+                }
                 KeyCode::Left => app.tree.collapse_or_parent(),
                 KeyCode::Right => app.tree.toggle_expand(),
                 KeyCode::Char('q') => break,
