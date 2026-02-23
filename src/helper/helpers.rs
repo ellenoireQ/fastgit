@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Fitrian Musya
+
 use git2::Status;
 use ratatui::style::Color;
 

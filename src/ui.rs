@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Fitrian Musya
+
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout},
