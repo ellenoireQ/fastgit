@@ -18,13 +18,18 @@ const BORDER_STYLE: Style = Style::new().yellow().bold();
 const BORDER_DEFAULT_STYLE: Style = Style::new().white().bold();
 
 pub fn draw_ui(f: &mut Frame, app: &mut App) {
-    let chunks = Layout::default()
+    let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(90), Constraint::Percentage(10)])
+        .constraints([Constraint::Min(0), Constraint::Length(3)])
         .split(f.area());
 
-    draw_content(f, chunks[0], app);
-    draw_footer(f, chunks[1]);
+    let bottom_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
+        .split(vertical_chunks[1]);
+
+    draw_content(f, vertical_chunks[0], app);
+    draw_footer(f, bottom_chunks[1]);
 }
 
 fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
@@ -197,7 +202,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
 }
 
 fn draw_footer(f: &mut Frame, area: ratatui::layout::Rect) {
-    let footer = Paragraph::new("q: Quit | Tab: Next | Shift+Tab: Prev").block(
+    let footer = Paragraph::new("b | Open Book").block(
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded),
