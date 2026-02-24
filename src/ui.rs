@@ -23,13 +23,7 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
         .constraints([Constraint::Min(0), Constraint::Length(3)])
         .split(f.area());
 
-    let bottom_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
-        .split(vertical_chunks[1]);
-
     draw_content(f, vertical_chunks[0], app);
-    draw_footer(f, bottom_chunks[1]);
 }
 
 fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
@@ -44,6 +38,11 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
                 .split(rows[0]);
+
+            let bottom_chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
+                .split(rows[1]);
 
             let h = Helper;
 
@@ -158,7 +157,8 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                     } else {
                         BORDER_DEFAULT_STYLE
                     });
-                f.render_widget(empty, rows[1]);
+                f.render_widget(empty, bottom_chunks[0]);
+                draw_footer(f, bottom_chunks[1]);
             } else {
                 let visible_lines: Vec<ListItem> = app
                     .diff_content
