@@ -4,9 +4,9 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Tabs},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Tabs, Wrap},
 };
 
 use crate::{
@@ -158,7 +158,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                         BORDER_DEFAULT_STYLE
                     });
                 f.render_widget(empty, bottom_chunks[0]);
-                draw_footer(f, bottom_chunks[1]);
+                draw_recipe(f, bottom_chunks[1]);
             } else {
                 let visible_lines: Vec<ListItem> = app
                     .diff_content
@@ -201,12 +201,22 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
     }
 }
 
-fn draw_footer(f: &mut Frame, area: ratatui::layout::Rect) {
-    let footer = Paragraph::new("b | Open Book").block(
+fn draw_recipe(f: &mut Frame, area: ratatui::layout::Rect) {
+    let content = Paragraph::new(vec![
+        Line::from("🕮  Book").style(Style::default().cyan()),
+        Line::from("A brief guide to using this application."),
+        Line::from(""),
+        Line::from("|⇥| Switching window"),
+        Line::from("|⏎| Select"),
+        Line::from("|q| Quit"),
+    ])
+    .wrap(Wrap { trim: true })
+    .block(
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded),
-    );
+    )
+    .add_modifier(Modifier::BOLD);
 
-    f.render_widget(footer, area);
+    f.render_widget(content, area);
 }
