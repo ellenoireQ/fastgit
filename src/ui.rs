@@ -20,36 +20,11 @@ const BORDER_DEFAULT_STYLE: Style = Style::new().white().bold();
 pub fn draw_ui(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Min(1),
-            Constraint::Length(3),
-        ])
+        .constraints([Constraint::Percentage(90), Constraint::Percentage(10)])
         .split(f.area());
 
-    draw_tabs(f, chunks[0], app);
-    draw_content(f, chunks[1], app);
-    draw_footer(f, chunks[2]);
-}
-
-fn draw_tabs(f: &mut Frame, area: ratatui::layout::Rect, app: &App) {
-    let titles = vec!["Worktree", "Config"];
-
-    let selected = match app.current_tab {
-        Tab::Tree => 0,
-        Tab::Config => 1,
-    };
-
-    let tabs = Tabs::new(titles)
-        .block(Block::default().borders(Borders::ALL).title("fastgit"))
-        .select(selected)
-        .highlight_style(
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        );
-
-    f.render_widget(tabs, area);
+    draw_content(f, chunks[0], app);
+    draw_footer(f, chunks[1]);
 }
 
 fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
