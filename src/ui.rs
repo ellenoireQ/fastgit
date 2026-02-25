@@ -13,7 +13,7 @@ use ratatui::{
 
 use crate::{
     app::{App, DiffLineKind, Tab},
-    helper::helpers::{DialogType, Helper},
+    helper::helpers::{Dialog, DialogType, Helper},
 };
 
 const BORDER_STYLE: Style = Style::new().yellow().bold();
@@ -33,15 +33,17 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
     if app.commit_warning_open {
         let h = Helper;
         h.draw_dialog(
-            f,                   // Frame
-            DialogType::Warning, // Tipe dialog
-            "Commit Failed",     // Title
-            vec![
-                Line::from("No staged files found"),
-                Line::from("Please stage files first"),
-            ], // Content
-            60,                  // Width
-            10,                  // Height
+            f, // Frame
+            Dialog {
+                dialog_type: DialogType::Warning,
+                title: "Commit Failed".to_string(),
+                content: vec![
+                    Line::from("No staged files found"),
+                    Line::from("Please stage files first"),
+                ],
+                width: 60,
+                height: 10,
+            },
         );
     }
 }

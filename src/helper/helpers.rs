@@ -20,6 +20,14 @@ pub enum DialogType {
     Success,
 }
 
+pub struct Dialog {
+    pub dialog_type: DialogType,
+    pub title: String,
+    pub content: Vec<Line<'static>>,
+    pub width: u16,
+    pub height: u16,
+}
+
 #[derive(Default)]
 pub struct Helper;
 
@@ -64,19 +72,13 @@ impl Helper {
     /// * `content` - Content lines to display
     /// * `width` - Dialog width (default: 60)
     /// * `height` - Dialog height (default: 10)
-    pub fn draw_dialog(
-        &self,
-        f: &mut Frame,
-        dialog_type: DialogType,
-        title: &str,
-        content: Vec<Line>,
-        width: u16,
-        height: u16,
-    ) {
+    pub fn draw_dialog(&self, f: &mut Frame, d: Dialog) {
         let area = f.area();
 
-        let x = (area.width.saturating_sub(width)) / 2;
-        let y = (area.height.saturating_sub(height)) / 2;
+        let x = (area.width.saturating_sub(d.width)) / 2;
+        let y = (area.height.saturating_sub(d.height)) / 2;
+
+        let (width, height) = (d.width, d.height);
 
         let dialog_area = ratatui::layout::Rect {
             x,
@@ -84,10 +86,9 @@ impl Helper {
             width,
             height,
         };
-
         f.render_widget(Clear, dialog_area);
 
-        let (color, icon) = match dialog_type {
+        let (color, icon) = match d.dialog_type {
             DialogType::Warning => (Color::Yellow, "⚠ "),
             DialogType::Error => (Color::Red, "✖ "),
             DialogType::Info => (Color::Cyan, "ℹ "),
@@ -97,7 +98,7 @@ impl Helper {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .title(format!(" {} {} ", icon, title))
+            .title(format!(" {} {} ", icon, d.title))
             .style(Style::default().fg(color).add_modifier(Modifier::BOLD));
 
         let inner = block.inner(dialog_area);
@@ -108,7 +109,7 @@ impl Helper {
             .constraints([Constraint::Min(1), Constraint::Length(1)])
             .split(inner);
 
-        let paragraph = Paragraph::new(content)
+        let paragraph = Paragraph::new(d.content)
             .style(Style::default().fg(Color::White))
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: true });
