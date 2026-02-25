@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fitrian Musya
 
+use std::io::empty;
+
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Tabs, Wrap},
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Tabs, Wrap},
 };
 
 use crate::{
@@ -184,12 +186,19 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                     })
                     .collect();
 
-                let diff_list = List::new(visible_lines).block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Rounded)
-                        .title(diff_title),
-                );
+                let diff_list = List::new(visible_lines)
+                    .block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Rounded)
+                            .title(diff_title),
+                    )
+                    .style(if app.window_index == 2 {
+                        BORDER_STYLE
+                    } else {
+                        BORDER_DEFAULT_STYLE
+                    });
+
                 f.render_widget(diff_list, bottom_chunks[0]);
                 draw_recipe(f, bottom_chunks[1]);
             }

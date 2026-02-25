@@ -196,7 +196,7 @@ impl App {
     }
 
     pub fn increase_window(&mut self) {
-        if self.window_index >= 2 {
+        if self.window_index == 2 {
             return self.window_index = 0;
         }
         self.window_index += 1;
