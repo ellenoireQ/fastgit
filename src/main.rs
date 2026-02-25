@@ -8,10 +8,11 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{Terminal, backend::CrosstermBackend};
+use ratatui::{Terminal, backend::CrosstermBackend, text::Line};
 
 use crate::{
     app::{App, Tab},
+    helper::helpers::{DialogType, Helper},
     ui::draw_ui,
 };
 mod app;
@@ -44,12 +45,24 @@ async fn main() -> io::Result<()> {
                         KeyCode::Backspace => app.commit_message_pop(),
                         _ => {}
                     }
+                } else if app.commit_warning_open {
+                    match key.code {
+                        KeyCode::Esc => app.commit_warning_open = false,
+                        KeyCode::Enter => app.commit_warning_open = false,
+                        _ => {}
+                    }
                 } else {
                     match key.code {
                         KeyCode::Tab => app.increase_window(),
                         KeyCode::BackTab => app.prev_tab(),
                         KeyCode::Char('s') => app.scan_git(),
-                        KeyCode::Char('c') => app.open_commit_dialog(),
+                        KeyCode::Char('c') => {
+                            if app.staged_count == 0 {
+                                app.commit_warning_open = true;
+                            } else {
+                                app.open_commit_dialog()
+                            }
+                        }
                         KeyCode::Enter => {
                             app.select_file();
                             app.focused = true

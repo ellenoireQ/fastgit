@@ -6,6 +6,7 @@ use std::env::current_dir;
 use std::path::{Path, PathBuf};
 
 use git2::*;
+use ratatui::Frame;
 
 use crate::file_tree::FileTree;
 
@@ -45,6 +46,8 @@ pub struct App {
     pub commit_summary: String,
     pub commit_description: String,
     pub commit_focus_description: bool,
+    pub commit_warning_open: bool,
+    pub staged_count: u32,
 }
 
 impl App {
@@ -69,6 +72,8 @@ impl App {
             commit_summary: String::new(),
             commit_description: String::new(),
             commit_focus_description: false,
+            commit_warning_open: false,
+            staged_count: 0,
         };
         app_new.get_path();
         app_new.scan_git();
@@ -179,10 +184,10 @@ impl App {
         }
     }
 
-    /// Toggle the staged status of a file. 
-    /// If the file is currently staged, it will be unstaged, 
+    /// Toggle the staged status of a file.
+    /// If the file is currently staged, it will be unstaged,
     /// and vice versa.
-    pub fn toggle_stage(&self, path: &PathBuf) -> Result<(), Error> {
+    pub fn toggle_stage(&mut self, path: &PathBuf) -> Result<(), Error> {
         let repo = Repository::open(&self.cur_dir)?;
         let mut index = repo.index()?;
         let staged_mask = Status::INDEX_NEW
@@ -204,6 +209,7 @@ impl App {
             }
         } else {
             index.add_path(path)?;
+            self.staged_count += 1;
         }
 
         index.write()?;
