@@ -4,7 +4,21 @@
 use std::path::PathBuf;
 
 use git2::Status;
-use ratatui::style::Color;
+use ratatui::{
+    Frame,
+    layout::{Alignment, Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    text::Line,
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
+};
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DialogType {
+    Warning,
+    Error,
+    Info,
+    Success,
+}
 
 #[derive(Default)]
 pub struct Helper;
@@ -38,5 +52,61 @@ impl Helper {
         } else {
             Color::Magenta
         }
+    }
+
+    /// Draw a centered dialog box with customizable type, title, and content
+    /// 
+    /// # Arguments
+    /// * `f` - The frame to render on
+    /// * `dialog_type` - Type of dialog (Warning, Error, Info, Success)
+    /// * `title` - Dialog title
+    /// * `content` - Content lines to display
+    /// * `width` - Dialog width (default: 60)
+    /// * `height` - Dialog height (default: 10)
+    pub fn draw_dialog(
+        &self,
+        f: &mut Frame,
+        dialog_type: DialogType,
+        title: &str,
+        content: Vec<Line>,
+        width: u16,
+        height: u16,
+    ) {
+        let area = f.area();
+        
+        let x = (area.width.saturating_sub(width)) / 2;
+        let y = (area.height.saturating_sub(height)) / 2;
+
+        let dialog_area = ratatui::layout::Rect {
+            x,
+            y,
+            width,
+            height,
+        };
+
+        f.render_widget(Clear, dialog_area);
+
+        let (color, icon) = match dialog_type {
+            DialogType::Warning => (Color::Yellow, "⚠ "),
+            DialogType::Error => (Color::Red, "✖ "),
+            DialogType::Info => (Color::Cyan, "ℹ "),
+            DialogType::Success => (Color::Green, "✓ "),
+        };
+
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .title(format!(" {} {} ", icon, title))
+            .style(Style::default().fg(color).add_modifier(Modifier::BOLD));
+
+        let inner = block.inner(dialog_area);
+        f.render_widget(block, dialog_area);
+
+        let paragraph = Paragraph::new(content)
+            .style(Style::default().fg(Color::White))
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: true });
+
+        f.render_widget(paragraph, inner);
     }
 }
