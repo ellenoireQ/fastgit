@@ -26,6 +26,10 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
         .split(f.area());
 
     draw_content(f, vertical_chunks[0], app);
+
+    if app.show_commit_dialog {
+        draw_commit_dialog(f, app);
+    }
 }
 
 fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
@@ -217,6 +221,7 @@ fn draw_recipe(f: &mut Frame, area: ratatui::layout::Rect) {
         Line::from(""),
         Line::from("|⇥| Switching window"),
         Line::from("|⏎| Select"),
+        Line::from("|c| Commit"),
         Line::from("|q| Quit"),
     ])
     .wrap(Wrap { trim: true })
@@ -228,4 +233,67 @@ fn draw_recipe(f: &mut Frame, area: ratatui::layout::Rect) {
     .add_modifier(Modifier::BOLD);
 
     f.render_widget(content, area);
+}
+
+fn draw_commit_dialog(f: &mut Frame, app: &App) {
+    let area = f.area();
+    let dialog_width = 70;
+    let dialog_height = 16;
+
+    let x = (area.width.saturating_sub(dialog_width)) / 2;
+    let y = (area.height.saturating_sub(dialog_height)) / 2;
+
+    let dialog_area = ratatui::layout::Rect {
+        x,
+        y,
+        width: dialog_width,
+        height: dialog_height,
+    };
+
+    f.render_widget(Clear, dialog_area);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(1),
+        ])
+        .split(dialog_area);
+
+    let summary_border_style = if !app.commit_focus_description {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default().fg(Color::White)
+    };
+
+    let summary = Paragraph::new(app.commit_summary.as_str())
+        .style(Style::default().fg(Color::White))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .title(" Commit Summary ")
+                .border_style(summary_border_style),
+        );
+
+    f.render_widget(summary, chunks[0]);
+
+    let description_border_style = if app.commit_focus_description {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default().fg(Color::White)
+    };
+
+    let description = Paragraph::new(app.commit_description.as_str())
+        .style(Style::default().fg(Color::White))
+        .wrap(Wrap { trim: false })
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .title(" Commit Description ")
+                .border_style(description_border_style),
+        );
+
+    f.render_widget(description, chunks[1]);
 }

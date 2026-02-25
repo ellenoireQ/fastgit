@@ -31,51 +31,68 @@ async fn main() -> io::Result<()> {
     loop {
         terminal.draw(|f| draw_ui(f, &mut app))?;
         match event::read()? {
-            Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
-                KeyCode::Tab => app.increase_window(),
-                KeyCode::BackTab => app.prev_tab(),
-                KeyCode::Char('s') => app.scan_git(),
-                KeyCode::Enter => {
-                    app.select_file();
-                    app.focused = true
-                }
-                KeyCode::Up => {
-                    if app.focused {
-                        app.diff_scroll_up();
-                    } else {
-                        app.tree.previous();
-                        app.select_file();
+            Event::Key(key) if key.kind == KeyEventKind::Press => {
+                if app.show_commit_dialog {
+                    match key.code {
+                        KeyCode::Esc => app.close_commit_dialog(),
+                        KeyCode::Tab => app.toggle_commit_focus(),
+                        KeyCode::Enter => {
+                            // TODO: implement commit logic
+                            app.close_commit_dialog();
+                        }
+                        KeyCode::Char(c) => app.commit_message_push(c),
+                        KeyCode::Backspace => app.commit_message_pop(),
+                        _ => {}
                     }
-                }
-                KeyCode::Down => {
-                    if app.focused {
-                        app.diff_scroll_down();
-                    } else {
-                        app.tree.next();
-                        app.select_file();
-                    }
-                }
-                KeyCode::Esc => {
-                    if app.focused {
-                        app.focused = false;
-                    }
-                }
-                KeyCode::Char(' ') => {
-                    if let Some(path) = &app.selected_file
-                        && let Err(err) = app.toggle_stage(&path.clone())
-                    {
-                        eprintln!("{}", err);
-                    };
-                }
-                KeyCode::Left => app.tree.collapse_or_parent(),
-                KeyCode::Right => app.tree.toggle_expand(),
-                // For testing purpose
-                KeyCode::Char('u') => app.window_index += 1,
+                } else {
+                    match key.code {
+                        KeyCode::Tab => app.increase_window(),
+                        KeyCode::BackTab => app.prev_tab(),
+                        KeyCode::Char('s') => app.scan_git(),
+                        KeyCode::Char('c') => app.open_commit_dialog(),
+                        KeyCode::Enter => {
+                            app.select_file();
+                            app.focused = true
+                        }
+                        KeyCode::Up => {
+                            if app.focused {
+                                app.diff_scroll_up();
+                            } else {
+                                app.tree.previous();
+                                app.select_file();
+                            }
+                        }
+                        KeyCode::Down => {
+                            if app.focused {
+                                app.diff_scroll_down();
+                            } else {
+                                app.tree.next();
+                                app.select_file();
+                            }
+                        }
+                        KeyCode::Esc => {
+                            if app.focused {
+                                app.focused = false;
+                            }
+                        }
+                        KeyCode::Char(' ') => {
+                            if let Some(path) = &app.selected_file
+                                && let Err(err) = app.toggle_stage(&path.clone())
+                            {
+                                eprintln!("{}", err);
+                            };
+                        }
+                        KeyCode::Left => app.tree.collapse_or_parent(),
+                        KeyCode::Right => app.tree.toggle_expand(),
+                        // For testing purpose
+                        KeyCode::Char('u') => app.window_index += 1,
 
-                KeyCode::Char('q') => break,
+                        KeyCode::Char('q') => break,
 
-                _ => {}
-            },
+                        _ => {}
+                    }
+                }
+            }
             _ => {}
         }
     }

@@ -41,6 +41,10 @@ pub struct App {
     pub diff_scroll: usize,
     pub focused: bool,
     pub window_index: u32,
+    pub show_commit_dialog: bool,
+    pub commit_summary: String,
+    pub commit_description: String,
+    pub commit_focus_description: bool,
 }
 
 impl App {
@@ -61,6 +65,10 @@ impl App {
             // 1 => Branch
             // 2 => Diff
             window_index: 0,
+            show_commit_dialog: false,
+            commit_summary: String::new(),
+            commit_description: String::new(),
+            commit_focus_description: false,
         };
         app_new.get_path();
         app_new.scan_git();
@@ -246,5 +254,39 @@ impl App {
             return self.has_git = true;
         }
         self.has_git = false;
+    }
+
+    pub fn open_commit_dialog(&mut self) {
+        self.show_commit_dialog = true;
+        self.commit_summary.clear();
+        self.commit_description.clear();
+        self.commit_focus_description = false;
+    }
+
+    pub fn close_commit_dialog(&mut self) {
+        self.show_commit_dialog = false;
+        self.commit_summary.clear();
+        self.commit_description.clear();
+        self.commit_focus_description = false;
+    }
+
+    pub fn commit_message_push(&mut self, c: char) {
+        if self.commit_focus_description {
+            self.commit_description.push(c);
+        } else {
+            self.commit_summary.push(c);
+        }
+    }
+
+    pub fn commit_message_pop(&mut self) {
+        if self.commit_focus_description {
+            self.commit_description.pop();
+        } else {
+            self.commit_summary.pop();
+        }
+    }
+
+    pub fn toggle_commit_focus(&mut self) {
+        self.commit_focus_description = !self.commit_focus_description;
     }
 }
