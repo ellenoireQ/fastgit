@@ -93,6 +93,23 @@ impl App {
                 }
             }
 
+            let mut options = git2::StatusOptions::new();
+            options.include_untracked(true);
+            
+            if let Ok(statuses) = repo.statuses(Some(&mut options)) {
+                for entry in statuses.iter() {
+                    if entry.status().contains(Status::WT_NEW) {
+                        if let Some(p) = entry.path() {
+                            let path = std::path::PathBuf::from(p);
+                            if !paths.contains(&path) {
+                                app_new.file_statuses.insert(path.clone(), entry.status());
+                                paths.push(path);
+                            }
+                        }
+                    }
+                }
+            }
+
             app_new.tree.populate_from_paths(paths);
 
             if let Ok(branches) = repo.branches(None) {
@@ -142,6 +159,23 @@ impl App {
             Some(s) => s.to_string(),
             None => return,
         };
+
+        if let Some(&status) = self.file_statuses.get(&file_path) {
+            if status.contains(Status::WT_NEW) && !status.contains(Status::INDEX_NEW) {
+                let full_path = Path::new(&self.cur_dir).join(&file_path);
+                if let Ok(content) = std::fs::read_to_string(&full_path) {
+                    let lines: Vec<DiffLine> = content
+                        .lines()
+                        .map(|line| DiffLine {
+                            kind: DiffLineKind::Add,
+                            content: line.to_string(),
+                        })
+                        .collect();
+                    self.diff_content = lines;
+                }
+                return;
+            }
+        }
 
         let mut opts = DiffOptions::new();
         opts.pathspec(&file_str);
