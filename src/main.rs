@@ -44,6 +44,7 @@ async fn main() -> io::Result<()> {
                         app.diff_scroll_up();
                     } else {
                         app.tree.previous();
+                        app.select_file();
                     }
                 }
                 KeyCode::Down => {
@@ -51,6 +52,7 @@ async fn main() -> io::Result<()> {
                         app.diff_scroll_down();
                     } else {
                         app.tree.next();
+                        app.select_file();
                     }
                 }
                 KeyCode::Esc => {
