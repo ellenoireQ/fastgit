@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fitrian Musya
 
+use std::path::PathBuf;
+
 use git2::Status;
 use ratatui::style::Color;
 

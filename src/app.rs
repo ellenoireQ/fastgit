@@ -171,6 +171,17 @@ impl App {
         }
     }
 
+    /// Staging changes
+    /// same as `git add PATH`
+    pub fn stage_file(&self, file: PathBuf) -> Result<(), Error> {
+        let repo = Repository::open(&self.cur_dir)?;
+        let mut index = repo.index()?;
+
+        index.add_path(&file)?;
+        index.write()?;
+        Ok(())
+    }
+
     pub fn diff_scroll_down(&mut self) {
         if self.diff_scroll < self.diff_content.len().saturating_sub(1) {
             self.diff_scroll += 1;

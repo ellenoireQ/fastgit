@@ -60,6 +60,13 @@ async fn main() -> io::Result<()> {
                         app.focused = false;
                     }
                 }
+                KeyCode::Char(' ') => {
+                    if let Some(path) = &app.selected_file
+                        && let Err(err) = app.stage_file(path.clone())
+                    {
+                        eprintln!("{}", err)
+                    };
+                }
                 KeyCode::Left => app.tree.collapse_or_parent(),
                 KeyCode::Right => app.tree.toggle_expand(),
                 // For testing purpose
