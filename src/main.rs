@@ -46,10 +46,8 @@ async fn main() -> io::Result<()> {
                         _ => {}
                     }
                 } else if app.commit_warning_open {
-                    match key.code {
-                        KeyCode::Esc => app.commit_warning_open = false,
-                        KeyCode::Enter => app.commit_warning_open = false,
-                        _ => {}
+                    if let KeyCode::Char('q') = key.code {
+                        app.commit_warning_open = false;
                     }
                 } else {
                     match key.code {

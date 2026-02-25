@@ -55,11 +55,12 @@ impl Helper {
     }
 
     /// Draw a centered dialog box with customizable type, title, and content
-    /// 
+    ///
     /// # Arguments
     /// * `f` - The frame to render on
     /// * `dialog_type` - Type of dialog (Warning, Error, Info, Success)
     /// * `title` - Dialog title
+    /// * `exit_hint` - Optional exit hint text (e.g., "<q> for exit")
     /// * `content` - Content lines to display
     /// * `width` - Dialog width (default: 60)
     /// * `height` - Dialog height (default: 10)
@@ -73,7 +74,7 @@ impl Helper {
         height: u16,
     ) {
         let area = f.area();
-        
+
         let x = (area.width.saturating_sub(width)) / 2;
         let y = (area.height.saturating_sub(height)) / 2;
 
@@ -102,11 +103,21 @@ impl Helper {
         let inner = block.inner(dialog_area);
         f.render_widget(block, dialog_area);
 
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(1), Constraint::Length(1)])
+            .split(inner);
+
         let paragraph = Paragraph::new(content)
             .style(Style::default().fg(Color::White))
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: true });
 
-        f.render_widget(paragraph, inner);
+        f.render_widget(paragraph, chunks[0]);
+
+        let hint_text = Paragraph::new("<q> Quit")
+            .style(Style::default().fg(Color::DarkGray))
+            .alignment(Alignment::Right);
+        f.render_widget(hint_text, chunks[1]);
     }
 }
