@@ -62,9 +62,9 @@ async fn main() -> io::Result<()> {
                 }
                 KeyCode::Char(' ') => {
                     if let Some(path) = &app.selected_file
-                        && let Err(err) = app.stage_file(path.clone())
+                        && let Err(err) = app.toggle_stage(&path.clone())
                     {
-                        eprintln!("{}", err)
+                        eprintln!("{}", err);
                     };
                 }
                 KeyCode::Left => app.tree.collapse_or_parent(),

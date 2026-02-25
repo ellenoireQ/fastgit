@@ -171,14 +171,35 @@ impl App {
         }
     }
 
-    /// Staging changes
-    /// same as `git add PATH`
-    pub fn stage_file(&self, file: PathBuf) -> Result<(), Error> {
+    /// Toggle the staged status of a file. 
+    /// If the file is currently staged, it will be unstaged, 
+    /// and vice versa.
+    pub fn toggle_stage(&self, path: &PathBuf) -> Result<(), Error> {
         let repo = Repository::open(&self.cur_dir)?;
         let mut index = repo.index()?;
+        let staged_mask = Status::INDEX_NEW
+            | Status::INDEX_MODIFIED
+            | Status::INDEX_DELETED
+            | Status::INDEX_RENAMED
+            | Status::INDEX_TYPECHANGE;
+        let status = repo.status_file(path).unwrap_or(Status::WT_NEW);
 
-        index.add_path(&file)?;
+        if status.intersects(staged_mask) {
+            if let Ok(head) = repo.head().and_then(|h| h.peel(ObjectType::Any)) {
+                if let Some(path_str) = path.to_str() {
+                    repo.reset_default(Some(&head), Some(path_str))?;
+                } else {
+                    index.remove_path(path)?;
+                }
+            } else {
+                index.remove_path(path)?;
+            }
+        } else {
+            index.add_path(path)?;
+        }
+
         index.write()?;
+
         Ok(())
     }
 
