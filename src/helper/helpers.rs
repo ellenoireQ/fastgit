@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fitrian Musya
 
-use std::path::PathBuf;
-
 use git2::Status;
 use ratatui::{
     Frame,
@@ -13,6 +11,7 @@ use ratatui::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)]
 pub enum DialogType {
     Warning,
     Error,

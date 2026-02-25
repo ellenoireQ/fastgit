@@ -22,7 +22,7 @@ impl FileNode {
         }
     }
 
-    pub fn insert(&mut self, full_path: &Path, relative_path: &Path) {
+    pub fn insert(&mut self, _full_path: &Path, relative_path: &Path) {
         let mut components = relative_path.components();
         if let Some(component) = components.next() {
             let component_path = PathBuf::from(component.as_os_str());
@@ -45,7 +45,7 @@ impl FileNode {
                 self.children.last_mut().unwrap()
             };
 
-            child_node.insert(full_path, components.as_path());
+            child_node.insert(_full_path, components.as_path());
         } else {
             self.is_dir = false;
         }
@@ -148,41 +148,39 @@ impl FileTree {
     }
 
     pub fn toggle_expand(&mut self) {
-        if let Some(i) = self.state.selected() {
-            if let Some((path, _, is_dir)) = self.items.get(i).cloned() {
-                if is_dir {
-                    if let Some(node) = Self::find_node_recursive(&mut self.root, &path) {
-                        node.expanded = !node.expanded;
-                    }
-                    self.update_items();
-                }
+        if let Some(i) = self.state.selected()
+            && let Some((path, _, is_dir)) = self.items.get(i).cloned()
+            && is_dir
+        {
+            if let Some(node) = Self::find_node_recursive(&mut self.root, &path) {
+                node.expanded = !node.expanded;
             }
+            self.update_items();
         }
     }
 
     pub fn collapse_or_parent(&mut self) {
-        if let Some(i) = self.state.selected() {
-            if let Some((path, depth, is_dir)) = self.items.get(i).cloned() {
-                if is_dir {
-                    if let Some(node) = Self::find_node_recursive(&mut self.root, &path) {
-                        if node.expanded {
-                            node.expanded = false;
-                            self.update_items();
-                            return;
-                        }
-                    }
-                }
+        if let Some(i) = self.state.selected()
+            && let Some((path, depth, is_dir)) = self.items.get(i).cloned()
+        {
+            if is_dir
+                && let Some(node) = Self::find_node_recursive(&mut self.root, &path)
+                && node.expanded
+            {
+                node.expanded = false;
+                self.update_items();
+                return;
+            }
 
-                if depth > 0 {
-                    let mut parent_idx = i;
-                    while parent_idx > 0 {
-                        parent_idx -= 1;
-                        if let Some((_, d, _)) = self.items.get(parent_idx) {
-                            if *d < depth {
-                                self.state.select(Some(parent_idx));
-                                return;
-                            }
-                        }
+            if depth > 0 {
+                let mut parent_idx = i;
+                while parent_idx > 0 {
+                    parent_idx -= 1;
+                    if let Some((_, d, _)) = self.items.get(parent_idx)
+                        && *d < depth
+                    {
+                        self.state.select(Some(parent_idx));
+                        return;
                     }
                 }
             }
@@ -194,10 +192,10 @@ impl FileTree {
             return Some(node);
         }
         for child in &mut node.children {
-            if path.starts_with(&child.path) {
-                if let Some(found) = Self::find_node_recursive(child, path) {
-                    return Some(found);
-                }
+            if path.starts_with(&child.path)
+                && let Some(found) = Self::find_node_recursive(child, path)
+            {
+                return Some(found);
             }
         }
         None

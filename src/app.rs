@@ -6,14 +6,12 @@ use std::env::current_dir;
 use std::path::{Path, PathBuf};
 
 use git2::*;
-use ratatui::Frame;
 
 use crate::file_tree::FileTree;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Tab {
     Tree,
-    Config,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -78,32 +76,31 @@ impl App {
         app_new.get_path();
         app_new.scan_git();
 
-        if app_new.has_git {
-            if let Ok(repo) = Repository::open(&app_new.cur_dir) {
-                if let Ok(statuses) = repo.statuses(None) {
-                    let mut paths: Vec<std::path::PathBuf> = Vec::new();
+        if app_new.has_git
+            && let Ok(repo) = Repository::open(&app_new.cur_dir)
+            && let Ok(statuses) = repo.statuses(None)
+        {
+            let mut paths: Vec<std::path::PathBuf> = Vec::new();
 
-                    for entry in statuses.iter() {
-                        if entry.status().contains(Status::IGNORED) {
-                            continue;
-                        }
-                        if let Some(p) = entry.path() {
-                            let path = std::path::PathBuf::from(p);
-                            app_new.file_statuses.insert(path.clone(), entry.status());
-                            paths.push(path);
-                        }
-                    }
-
-                    app_new.tree.populate_from_paths(paths);
+            for entry in statuses.iter() {
+                if entry.status().contains(Status::IGNORED) {
+                    continue;
                 }
+                if let Some(p) = entry.path() {
+                    let path = std::path::PathBuf::from(p);
+                    app_new.file_statuses.insert(path.clone(), entry.status());
+                    paths.push(path);
+                }
+            }
 
-                if let Ok(branches) = repo.branches(None) {
-                    for branch in branches {
-                        if let Ok((branch, _)) = branch {
-                            if let Ok(Some(name)) = branch.name() {
-                                app_new.branches.push(name.to_string());
-                            }
-                        }
+            app_new.tree.populate_from_paths(paths);
+
+            if let Ok(branches) = repo.branches(None) {
+                for branch in branches {
+                    if let Ok((branch, _)) = branch
+                        && let Ok(Some(name)) = branch.name()
+                    {
+                        app_new.branches.push(name.to_string());
                     }
                 }
             }
@@ -113,15 +110,14 @@ impl App {
     }
 
     pub fn select_file(&mut self) {
-        if let Some(i) = self.tree.state.selected() {
-            if let Some((path, _, is_dir)) = self.tree.items.get(i) {
-                if !is_dir {
-                    let file_path = path.strip_prefix(".").unwrap_or(path).to_path_buf();
-                    self.selected_file = Some(file_path);
-                    self.diff_scroll = 0;
-                    self.load_diff();
-                }
-            }
+        if let Some(i) = self.tree.state.selected()
+            && let Some((path, _, is_dir)) = self.tree.items.get(i)
+            && !is_dir
+        {
+            let file_path = path.strip_prefix(".").unwrap_or(path).to_path_buf();
+            self.selected_file = Some(file_path);
+            self.diff_scroll = 0;
+            self.load_diff();
         }
     }
 
@@ -187,7 +183,7 @@ impl App {
     /// Toggle the staged status of a file.
     /// If the file is currently staged, it will be unstaged,
     /// and vice versa.
-    pub fn toggle_stage(&mut self, path: &PathBuf) -> Result<(), Error> {
+    pub fn toggle_stage(&mut self, path: &Path) -> Result<(), Error> {
         let repo = Repository::open(&self.cur_dir)?;
         let mut index = repo.index()?;
         let staged_mask = Status::INDEX_NEW
@@ -225,20 +221,6 @@ impl App {
 
     pub fn diff_scroll_up(&mut self) {
         self.diff_scroll = self.diff_scroll.saturating_sub(1);
-    }
-
-    pub fn next_tab(&mut self) {
-        self.current_tab = match self.current_tab {
-            Tab::Tree => Tab::Config,
-            Tab::Config => Tab::Tree,
-        };
-    }
-
-    pub fn prev_tab(&mut self) {
-        self.current_tab = match self.current_tab {
-            Tab::Tree => Tab::Config,
-            Tab::Config => Tab::Tree,
-        };
     }
 
     pub fn increase_window(&mut self) {

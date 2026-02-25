@@ -8,13 +8,9 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{Terminal, backend::CrosstermBackend, text::Line};
+use ratatui::{Terminal, backend::CrosstermBackend};
 
-use crate::{
-    app::{App, Tab},
-    helper::helpers::{DialogType, Helper},
-    ui::draw_ui,
-};
+use crate::{app::App, ui::draw_ui};
 mod app;
 mod file_tree;
 mod helper;
@@ -52,7 +48,6 @@ async fn main() -> io::Result<()> {
                 } else {
                     match key.code {
                         KeyCode::Tab => app.increase_window(),
-                        KeyCode::BackTab => app.prev_tab(),
                         KeyCode::Char('s') => app.scan_git(),
                         KeyCode::Char('c') => {
                             if app.staged_count == 0 {

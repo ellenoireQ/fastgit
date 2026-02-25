@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fitrian Musya
 
-use std::io::empty;
-
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Tabs, Wrap},
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Wrap},
 };
 
 use crate::{
@@ -222,10 +220,6 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 f.render_widget(diff_list, bottom_chunks[0]);
                 draw_recipe(f, bottom_chunks[1]);
             }
-        }
-        Tab::Config => {
-            let block = Block::default().borders(Borders::ALL).title("Config");
-            f.render_widget(block, area);
         }
     }
 }
