@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::env::current_dir;
 use std::path::{Path, PathBuf};
 
-use git2::{DiffOptions, Status};
+use git2::*;
 
 use crate::file_tree::FileTree;
 
@@ -66,7 +66,7 @@ impl App {
         app_new.scan_git();
 
         if app_new.has_git {
-            if let Ok(repo) = git2::Repository::open(&app_new.cur_dir) {
+            if let Ok(repo) = Repository::open(&app_new.cur_dir) {
                 if let Ok(statuses) = repo.statuses(None) {
                     let mut paths: Vec<std::path::PathBuf> = Vec::new();
 
@@ -124,7 +124,7 @@ impl App {
             return;
         }
 
-        let repo = match git2::Repository::open(&self.cur_dir) {
+        let repo = match Repository::open(&self.cur_dir) {
             Ok(r) => r,
             Err(_) => return,
         };
@@ -145,7 +145,7 @@ impl App {
         if let Ok(diff) = diff {
             let mut lines: Vec<DiffLine> = Vec::new();
 
-            let _ = diff.print(git2::DiffFormat::Patch, |_delta, _hunk, line| {
+            let _ = diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
                 let content = String::from_utf8_lossy(line.content()).to_string();
                 let kind = match line.origin() {
                     '+' => DiffLineKind::Add,
