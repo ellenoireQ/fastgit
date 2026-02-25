@@ -190,8 +190,8 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                         .border_type(BorderType::Rounded)
                         .title(diff_title),
                 );
-
-                f.render_widget(diff_list, rows[1]);
+                f.render_widget(diff_list, bottom_chunks[0]);
+                draw_recipe(f, bottom_chunks[1]);
             }
         }
         Tab::Config => {
