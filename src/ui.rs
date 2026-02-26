@@ -3,7 +3,7 @@
 
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Wrap},
@@ -44,6 +44,8 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
             },
         );
     }
+
+    draw_footer(vertical_chunks[1], app, f);
 }
 
 fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
@@ -303,4 +305,34 @@ fn draw_commit_dialog(f: &mut Frame, app: &App) {
         );
 
     f.render_widget(description, chunks[1]);
+}
+
+fn draw_footer(area: Rect, app: &App, f: &mut Frame) {
+    let focused_panel = if app.focused {
+        "Focused"
+    } else {
+        match app.window_index {
+            0 => "Tree",
+            1 => "Branches",
+            2 => "Diff",
+            _ => "Tree",
+        }
+    };
+
+    let left_line = Line::from(vec![
+        Span::styled(
+            format!(" {} ", focused_panel),
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::Green)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw("  "),
+        Span::styled(
+            " master",
+            Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD),
+        ),
+    ]);
+
+    f.render_widget(Paragraph::new(left_line), area);
 }
