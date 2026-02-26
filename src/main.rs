@@ -34,13 +34,54 @@ async fn main() -> io::Result<()> {
                         KeyCode::Esc => app.close_commit_dialog(),
                         KeyCode::Tab => app.toggle_commit_focus(),
                         KeyCode::Enter => {
-                            // TODO: implement commit logic
+                            if !app.commit_summary.is_empty() {
+                                match app.commit() {
+                                    Ok(_oid) => {
+                                        app.scan_git();
+                                        app.file_statuses.clear();
+                                        app.tree = crate::file_tree::FileTree::new(std::path::PathBuf::from("."));
+                                        app.diff_content.clear();
+                                        app.selected_file = None;
+                                        
+                                        if app.has_git {
+                                            if let Ok(repo) = git2::Repository::open(&app.cur_dir) {
+                                                let mut options = git2::StatusOptions::new();
+                                                options.include_untracked(true);
+                                                
+                                                if let Ok(statuses) = repo.statuses(Some(&mut options)) {
+                                                    let mut paths: Vec<std::path::PathBuf> = Vec::new();
+                                                    
+                                                    for entry in statuses.iter() {
+                                                        if entry.status().contains(git2::Status::IGNORED) {
+                                                            continue;
+                                                        }
+                                                        if let Some(p) = entry.path() {
+                                                            let path = std::path::PathBuf::from(p);
+                                                            app.file_statuses.insert(path.clone(), entry.status());
+                                                            paths.push(path);
+                                                        }
+                                                    }
+                                                    
+                                                    app.tree.populate_from_paths(paths);
+                                                }
+                                            }
+                                        }
+                                        
+                                        app.commit_success_open = true;
+                                    }
+                                    Err(_e) => {
+                                        // TODO: Show error dialog
+                                    }
+                                }
+                            }
                             app.close_commit_dialog();
                         }
                         KeyCode::Char(c) => app.commit_message_push(c),
                         KeyCode::Backspace => app.commit_message_pop(),
                         _ => {}
                     }
+                } else if app.commit_success_open {
+                    app.commit_success_open = false;
                 } else if app.commit_warning_open {
                     if let KeyCode::Char('q') = key.code {
                         app.commit_warning_open = false;

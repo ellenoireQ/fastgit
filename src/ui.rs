@@ -44,6 +44,23 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
             },
         );
     }
+    if app.commit_success_open {
+        let h = Helper;
+        h.draw_dialog(
+            f,
+            Dialog {
+                dialog_type: DialogType::Success,
+                title: "Commit Successful".to_string(),
+                content: vec![
+                    Line::from("Your changes have been committed"),
+                    Line::from(""),
+                    Line::from("Press any key to continue"),
+                ],
+                width: 60,
+                height: 10,
+            },
+        );
+    }
 
     draw_footer(vertical_chunks[1], app, f);
 }

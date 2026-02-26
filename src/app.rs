@@ -45,6 +45,7 @@ pub struct App {
     pub commit_description: String,
     pub commit_focus_description: bool,
     pub commit_warning_open: bool,
+    pub commit_success_open: bool,
     pub staged_count: u32,
 }
 
@@ -71,6 +72,7 @@ impl App {
             commit_description: String::new(),
             commit_focus_description: false,
             commit_warning_open: false,
+            commit_success_open: false,
             staged_count: 0,
         };
         app_new.get_path();
@@ -310,5 +312,43 @@ impl App {
 
     pub fn toggle_commit_focus(&mut self) {
         self.commit_focus_description = !self.commit_focus_description;
+    }
+
+    pub fn commit(&mut self) -> Result<Oid, Error> {
+        let repo = Repository::open(&self.cur_dir)?;
+        let mut index = repo.index()?;
+        
+        let tree_oid = index.write_tree()?;
+        let tree = repo.find_tree(tree_oid)?;
+        
+        let signature = repo.signature()?;
+        
+        let message = if self.commit_description.is_empty() {
+            self.commit_summary.clone()
+        } else {
+            format!("{}\n\n{}", self.commit_summary, self.commit_description)
+        };
+        
+        let mut parents = Vec::new();
+        if let Ok(head) = repo.head() {
+            if let Ok(commit) = head.peel_to_commit() {
+                parents.push(commit);
+            }
+        }
+        
+        let parent_refs: Vec<&Commit> = parents.iter().collect();
+        
+        let oid = repo.commit(
+            Some("HEAD"),
+            &signature,
+            &signature,
+            &message,
+            &tree,
+            &parent_refs,
+        )?;
+        
+        self.staged_count = 0;
+        
+        Ok(oid)
     }
 }
