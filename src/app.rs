@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 use std::env::current_dir;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc;
 
 use git2::*;
 
@@ -49,6 +50,8 @@ pub struct App {
     pub staged_count: u32,
     pub push_error: Option<String>,
     pub push_success_open: bool,
+    pub push_in_progress: bool,
+    pub push_result_rx: Option<mpsc::Receiver<Result<(), String>>>,
 }
 
 impl App {
@@ -78,6 +81,8 @@ impl App {
             staged_count: 0,
             push_error: None,
             push_success_open: false,
+            push_in_progress: false,
+            push_result_rx: None,
         };
         app_new.get_path();
         app_new.scan_git();
@@ -356,36 +361,47 @@ impl App {
         Ok(oid)
     }
 
-    pub fn push_repo(&self) -> Result<(), Error> {
-        let repo = Repository::open(".")?;
+    pub fn start_push(&mut self) {
+        if self.push_in_progress {
+            return;
+        }
 
-        let head = repo.head()?;
-        let branch = head.shorthand().ok_or(Error::from_str("Invalid branch"))?;
+        self.push_in_progress = true;
 
-        let refspec = format!("HEAD:refs/heads/{}", branch);
+        let cur_dir = self.cur_dir.clone();
+        let (tx, rx) = mpsc::channel();
+        self.push_result_rx = Some(rx);
 
-        let config = repo.config()?;
-
-        let mut callbacks = RemoteCallbacks::new();
-
-        callbacks.credentials(move |url, username_from_url, allowed_types| {
-            if allowed_types.is_ssh_key() {
-                return Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"));
-            }
-
-            if allowed_types.is_user_pass_plaintext() {
-                return Cred::credential_helper(&config, url, username_from_url);
-            }
-
-            Cred::default()
+        std::thread::spawn(move || {
+            let result = Self::push_repo_sync(&cur_dir);
+            let _ = tx.send(result.map_err(|e| e.to_string()));
         });
+    }
 
-        let mut push_options = PushOptions::new();
-        push_options.remote_callbacks(callbacks);
+    pub fn check_push_result(&mut self) {
+        if let Some(rx) = &self.push_result_rx {
+            if let Ok(result) = rx.try_recv() {
+                self.push_in_progress = false;
+                self.push_result_rx = None;
+                match result {
+                    Ok(_) => self.push_success_open = true,
+                    Err(err) => self.push_error = Some(err),
+                }
+            }
+        }
+    }
 
-        let mut remote = repo.find_remote("origin")?;
+    fn push_repo_sync(cur_dir: &str) -> Result<(), Error> {
+        let output = std::process::Command::new("git")
+            .arg("push")
+            .current_dir(cur_dir)
+            .output()
+            .map_err(|e| Error::from_str(&e.to_string()))?;
 
-        remote.push(&[&refspec], Some(&mut push_options))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(Error::from_str(stderr.trim()));
+        }
 
         Ok(())
     }

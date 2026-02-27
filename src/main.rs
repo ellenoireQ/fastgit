@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Fitrian Musya
 
 use std::io;
+use std::time::Duration;
 
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
@@ -27,6 +28,13 @@ async fn main() -> io::Result<()> {
     let mut app = App::new();
     loop {
         terminal.draw(|f| draw_ui(f, &mut app))?;
+
+        app.check_push_result();
+
+        if !event::poll(Duration::from_millis(100))? {
+            continue;
+        }
+
         match event::read()? {
             Event::Key(key) if key.kind == KeyEventKind::Press => {
                 if app.show_commit_dialog {
@@ -113,10 +121,7 @@ async fn main() -> io::Result<()> {
                             }
                         }
                         KeyCode::Char('P') => {
-                            match app.push_repo() {
-                                Ok(_) => app.push_success_open = true,
-                                Err(err) => app.push_error = Some(err.to_string()),
-                            }
+                            app.start_push();
                         }
                         KeyCode::Enter => {
                             app.select_file();

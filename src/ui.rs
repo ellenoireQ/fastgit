@@ -61,6 +61,19 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
             },
         );
     }
+    if app.push_in_progress {
+        let h = Helper;
+        h.draw_dialog(
+            f,
+            Dialog {
+                dialog_type: DialogType::Success,
+                title: "Pushing...".to_string(),
+                content: vec![Line::from("Pushing to remote, please wait...")],
+                width: 60,
+                height: 8,
+            },
+        );
+    }
     if app.push_success_open {
         let h = Helper;
         h.draw_dialog(
