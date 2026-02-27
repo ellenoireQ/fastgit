@@ -97,7 +97,7 @@ impl App {
 
             let mut options = git2::StatusOptions::new();
             options.include_untracked(true);
-            
+
             if let Ok(statuses) = repo.statuses(Some(&mut options)) {
                 for entry in statuses.iter() {
                     if entry.status().contains(Status::WT_NEW) {
@@ -317,27 +317,27 @@ impl App {
     pub fn commit(&mut self) -> Result<Oid, Error> {
         let repo = Repository::open(&self.cur_dir)?;
         let mut index = repo.index()?;
-        
+
         let tree_oid = index.write_tree()?;
         let tree = repo.find_tree(tree_oid)?;
-        
+
         let signature = repo.signature()?;
-        
+
         let message = if self.commit_description.is_empty() {
             self.commit_summary.clone()
         } else {
             format!("{}\n\n{}", self.commit_summary, self.commit_description)
         };
-        
+
         let mut parents = Vec::new();
         if let Ok(head) = repo.head() {
             if let Ok(commit) = head.peel_to_commit() {
                 parents.push(commit);
             }
         }
-        
+
         let parent_refs: Vec<&Commit> = parents.iter().collect();
-        
+
         let oid = repo.commit(
             Some("HEAD"),
             &signature,
@@ -346,9 +346,24 @@ impl App {
             &tree,
             &parent_refs,
         )?;
-        
+
         self.staged_count = 0;
-        
+
         Ok(oid)
+    }
+
+    pub fn push_repo(&self) -> Result<(), Error> {
+        let repo = Repository::open(".")?;
+
+        let head = repo.head()?;
+        let branch = head.shorthand().ok_or(Error::from_str("Invalid branch"))?;
+
+        let refspec = format!("refs/heads/{}:refs/heads/{}", branch, branch);
+
+        let mut remote = repo.find_remote("origin")?;
+
+        remote.push(&[&refspec], None)?;
+
+        Ok(())
     }
 }

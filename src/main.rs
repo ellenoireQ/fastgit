@@ -109,7 +109,9 @@ async fn main() -> io::Result<()> {
                             }
                         }
                         KeyCode::Char('P') => {
-                            println!("Key P Pressed")
+                            if let Err(err) = app.push_repo() {
+                                println!("{}", err);
+                            }
                         }
                         KeyCode::Enter => {
                             app.select_file();
