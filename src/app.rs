@@ -52,6 +52,7 @@ pub struct App {
     pub push_success_open: bool,
     pub push_in_progress: bool,
     pub push_result_rx: Option<mpsc::Receiver<Result<(), String>>>,
+    pub branch_focused: bool,
 }
 
 impl App {
@@ -83,6 +84,7 @@ impl App {
             push_success_open: false,
             push_in_progress: false,
             push_result_rx: None,
+            branch_focused: false,
         };
         app_new.get_path();
         app_new.scan_git();

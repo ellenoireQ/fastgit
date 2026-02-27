@@ -109,6 +109,18 @@ async fn main() -> io::Result<()> {
                     if let KeyCode::Char('q') = key.code {
                         app.commit_warning_open = false;
                     }
+                } else if app.branch_focused {
+                    match key.code {
+                        // In this logic will be blocked to other key triggered so we need to call
+                        // this again to increase the index, so at this moment its work.
+                        KeyCode::Tab => {
+                            app.branch_focused = false;
+                            app.increase_window();
+                        }
+                        // call 'q' again.
+                        KeyCode::Char('q') => break,
+                        _ => {}
+                    }
                 } else {
                     match key.code {
                         KeyCode::Tab => app.increase_window(),

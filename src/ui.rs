@@ -108,7 +108,10 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
             },
         );
     }
-
+    match app.window_index {
+        1 => app.branch_focused = true,
+        _ => {}
+    }
     draw_footer(vertical_chunks[1], app, f);
 }
 
