@@ -61,6 +61,40 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
             },
         );
     }
+    if app.push_success_open {
+        let h = Helper;
+        h.draw_dialog(
+            f,
+            Dialog {
+                dialog_type: DialogType::Success,
+                title: "Push Successful".to_string(),
+                content: vec![
+                    Line::from("Your changes have been pushed to remote"),
+                    Line::from(""),
+                    Line::from("Press any key to continue"),
+                ],
+                width: 60,
+                height: 10,
+            },
+        );
+    }
+    if let Some(err_msg) = &app.push_error {
+        let h = Helper;
+        h.draw_dialog(
+            f,
+            Dialog {
+                dialog_type: DialogType::Warning,
+                title: "Push Failed".to_string(),
+                content: vec![
+                    Line::from(err_msg.clone()),
+                    Line::from(""),
+                    Line::from("Press any key to continue"),
+                ],
+                width: 70,
+                height: 10,
+            },
+        );
+    }
 
     draw_footer(vertical_chunks[1], app, f);
 }

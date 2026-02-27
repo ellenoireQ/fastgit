@@ -47,6 +47,8 @@ pub struct App {
     pub commit_warning_open: bool,
     pub commit_success_open: bool,
     pub staged_count: u32,
+    pub push_error: Option<String>,
+    pub push_success_open: bool,
 }
 
 impl App {
@@ -74,6 +76,8 @@ impl App {
             commit_warning_open: false,
             commit_success_open: false,
             staged_count: 0,
+            push_error: None,
+            push_success_open: false,
         };
         app_new.get_path();
         app_new.scan_git();

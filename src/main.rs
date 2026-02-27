@@ -93,6 +93,10 @@ async fn main() -> io::Result<()> {
                     }
                 } else if app.commit_success_open {
                     app.commit_success_open = false;
+                } else if app.push_success_open {
+                    app.push_success_open = false;
+                } else if app.push_error.is_some() {
+                    app.push_error = None;
                 } else if app.commit_warning_open {
                     if let KeyCode::Char('q') = key.code {
                         app.commit_warning_open = false;
@@ -109,8 +113,9 @@ async fn main() -> io::Result<()> {
                             }
                         }
                         KeyCode::Char('P') => {
-                            if let Err(err) = app.push_repo() {
-                                println!("{}", err);
+                            match app.push_repo() {
+                                Ok(_) => app.push_success_open = true,
+                                Err(err) => app.push_error = Some(err.to_string()),
                             }
                         }
                         KeyCode::Enter => {
