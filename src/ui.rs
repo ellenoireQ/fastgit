@@ -251,6 +251,7 @@ fn draw_recipe(f: &mut Frame, area: ratatui::layout::Rect) {
         Line::from("|⇥| Switching window"),
         Line::from("|⏎| Select"),
         Line::from("|c| Commit"),
+        Line::from("|P| Pushing"),
         Line::from("|q| Quit"),
     ])
     .wrap(Wrap { trim: true })
@@ -347,7 +348,9 @@ fn draw_footer(area: Rect, app: &App, f: &mut Frame) {
         Span::raw("  "),
         Span::styled(
             " master",
-            Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Magenta)
+                .add_modifier(Modifier::BOLD),
         ),
     ]);
 

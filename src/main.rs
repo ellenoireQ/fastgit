@@ -39,34 +39,45 @@ async fn main() -> io::Result<()> {
                                     Ok(_oid) => {
                                         app.scan_git();
                                         app.file_statuses.clear();
-                                        app.tree = crate::file_tree::FileTree::new(std::path::PathBuf::from("."));
+                                        app.tree = crate::file_tree::FileTree::new(
+                                            std::path::PathBuf::from("."),
+                                        );
                                         app.diff_content.clear();
                                         app.selected_file = None;
-                                        
+
                                         if app.has_git {
                                             if let Ok(repo) = git2::Repository::open(&app.cur_dir) {
                                                 let mut options = git2::StatusOptions::new();
                                                 options.include_untracked(true);
-                                                
-                                                if let Ok(statuses) = repo.statuses(Some(&mut options)) {
-                                                    let mut paths: Vec<std::path::PathBuf> = Vec::new();
-                                                    
+
+                                                if let Ok(statuses) =
+                                                    repo.statuses(Some(&mut options))
+                                                {
+                                                    let mut paths: Vec<std::path::PathBuf> =
+                                                        Vec::new();
+
                                                     for entry in statuses.iter() {
-                                                        if entry.status().contains(git2::Status::IGNORED) {
+                                                        if entry
+                                                            .status()
+                                                            .contains(git2::Status::IGNORED)
+                                                        {
                                                             continue;
                                                         }
                                                         if let Some(p) = entry.path() {
                                                             let path = std::path::PathBuf::from(p);
-                                                            app.file_statuses.insert(path.clone(), entry.status());
+                                                            app.file_statuses.insert(
+                                                                path.clone(),
+                                                                entry.status(),
+                                                            );
                                                             paths.push(path);
                                                         }
                                                     }
-                                                    
+
                                                     app.tree.populate_from_paths(paths);
                                                 }
                                             }
                                         }
-                                        
+
                                         app.commit_success_open = true;
                                     }
                                     Err(_e) => {
@@ -96,6 +107,9 @@ async fn main() -> io::Result<()> {
                             } else {
                                 app.open_commit_dialog()
                             }
+                        }
+                        KeyCode::Char('P') => {
+                            println!("Key P Pressed")
                         }
                         KeyCode::Enter => {
                             app.select_file();
