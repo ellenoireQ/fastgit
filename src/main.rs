@@ -122,6 +122,7 @@ async fn main() -> io::Result<()> {
                         _ => {}
                     }
                 } else {
+                    // INFO: Main Terminal Key logic
                     match key.code {
                         KeyCode::Tab => app.increase_window(),
                         KeyCode::Char('s') => app.scan_git(),
