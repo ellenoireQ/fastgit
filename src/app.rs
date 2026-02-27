@@ -358,11 +358,30 @@ impl App {
         let head = repo.head()?;
         let branch = head.shorthand().ok_or(Error::from_str("Invalid branch"))?;
 
-        let refspec = format!("refs/heads/{}:refs/heads/{}", branch, branch);
+        let refspec = format!("HEAD:refs/heads/{}", branch);
+
+        let config = repo.config()?;
+
+        let mut callbacks = RemoteCallbacks::new();
+
+        callbacks.credentials(move |url, username_from_url, allowed_types| {
+            if allowed_types.is_ssh_key() {
+                return Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"));
+            }
+
+            if allowed_types.is_user_pass_plaintext() {
+                return Cred::credential_helper(&config, url, username_from_url);
+            }
+
+            Cred::default()
+        });
+
+        let mut push_options = PushOptions::new();
+        push_options.remote_callbacks(callbacks);
 
         let mut remote = repo.find_remote("origin")?;
 
-        remote.push(&[&refspec], None)?;
+        remote.push(&[&refspec], Some(&mut push_options))?;
 
         Ok(())
     }
