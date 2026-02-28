@@ -17,6 +17,12 @@ pub enum Tab {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum BranchTab {
+    Local,
+    Remote,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum DiffLineKind {
     Add,
     Delete,
@@ -58,6 +64,13 @@ pub struct App {
     pub push_in_progress: bool,
     pub push_result_rx: Option<mpsc::Receiver<Result<(), String>>>,
     pub branch_focused: bool,
+    pub branch_tab: BranchTab,
+    pub remotes: Vec<(String, String)>,
+    pub remote_state: ListState,
+    pub show_add_remote_dialog: bool,
+    pub add_remote_name: String,
+    pub add_remote_url: String,
+    pub add_remote_focus_url: bool,
 }
 
 impl App {
@@ -94,6 +107,13 @@ impl App {
             push_in_progress: false,
             push_result_rx: None,
             branch_focused: false,
+            branch_tab: BranchTab::Local,
+            remotes: vec![],
+            remote_state: ListState::default(),
+            show_add_remote_dialog: false,
+            add_remote_name: String::new(),
+            add_remote_url: String::new(),
+            add_remote_focus_url: false,
         };
         app_new.get_path();
         app_new.scan_git();
@@ -144,6 +164,18 @@ impl App {
                 }
                 if !app_new.branches.is_empty() {
                     app_new.branch_state.select(Some(0));
+                }
+            }
+
+            if let Ok(rmts) = repo.remotes() {
+                for name in rmts.iter().flatten() {
+                    if let Ok(remote) = repo.find_remote(name) {
+                        let url = remote.url().unwrap_or("").to_string();
+                        app_new.remotes.push((name.to_string(), url));
+                    }
+                }
+                if !app_new.remotes.is_empty() {
+                    app_new.remote_state.select(Some(0));
                 }
             }
         }
@@ -515,6 +547,116 @@ impl App {
             return Err(Error::from_str(stderr.trim()));
         }
 
+        Ok(())
+    }
+
+    pub fn branch_tab_toggle(&mut self) {
+        self.branch_tab = match self.branch_tab {
+            BranchTab::Local => BranchTab::Remote,
+            BranchTab::Remote => BranchTab::Local,
+        };
+    }
+
+    pub fn load_remotes(&mut self) {
+        self.remotes.clear();
+        if !self.has_git {
+            return;
+        }
+        if let Ok(repo) = Repository::open(&self.cur_dir) {
+            if let Ok(rmts) = repo.remotes() {
+                for name in rmts.iter().flatten() {
+                    if let Ok(remote) = repo.find_remote(name) {
+                        let url = remote.url().unwrap_or("").to_string();
+                        self.remotes.push((name.to_string(), url));
+                    }
+                }
+            }
+        }
+        if !self.remotes.is_empty() && self.remote_state.selected().is_none() {
+            self.remote_state.select(Some(0));
+        }
+    }
+
+    pub fn remote_next(&mut self) {
+        if self.remotes.is_empty() {
+            self.remote_state.select(None);
+            return;
+        }
+        let next = match self.remote_state.selected() {
+            Some(index) if index + 1 < self.remotes.len() => index + 1,
+            _ => 0,
+        };
+        self.remote_state.select(Some(next));
+    }
+
+    pub fn remote_previous(&mut self) {
+        if self.remotes.is_empty() {
+            self.remote_state.select(None);
+            return;
+        }
+        let prev = match self.remote_state.selected() {
+            Some(0) | None => self.remotes.len() - 1,
+            Some(index) => index - 1,
+        };
+        self.remote_state.select(Some(prev));
+    }
+
+    pub fn open_add_remote_dialog(&mut self) {
+        self.show_add_remote_dialog = true;
+        self.add_remote_name.clear();
+        self.add_remote_url.clear();
+        self.add_remote_focus_url = false;
+    }
+
+    pub fn close_add_remote_dialog(&mut self) {
+        self.show_add_remote_dialog = false;
+        self.add_remote_name.clear();
+        self.add_remote_url.clear();
+        self.add_remote_focus_url = false;
+    }
+
+    pub fn add_remote_input_push(&mut self, c: char) {
+        if self.add_remote_focus_url {
+            self.add_remote_url.push(c);
+        } else {
+            self.add_remote_name.push(c);
+        }
+    }
+
+    pub fn add_remote_input_pop(&mut self) {
+        if self.add_remote_focus_url {
+            self.add_remote_url.pop();
+        } else {
+            self.add_remote_name.pop();
+        }
+    }
+
+    pub fn confirm_add_remote(&mut self) -> Result<(), Error> {
+        if self.add_remote_name.is_empty() || self.add_remote_url.is_empty() {
+            return Ok(());
+        }
+        let repo = Repository::open(&self.cur_dir)?;
+        repo.remote(&self.add_remote_name, &self.add_remote_url)?;
+        self.load_remotes();
+        self.close_add_remote_dialog();
+        Ok(())
+    }
+
+    pub fn remove_selected_remote(&mut self) -> Result<(), Error> {
+        if let Some(idx) = self.remote_state.selected() {
+            if let Some((name, _)) = self.remotes.get(idx) {
+                let name = name.clone();
+                let repo = Repository::open(&self.cur_dir)?;
+                repo.remote_delete(&name)?;
+                self.load_remotes();
+                if self.remotes.is_empty() {
+                    self.remote_state.select(None);
+                } else {
+                    let new_idx = idx.min(self.remotes.len() - 1);
+                    self.remote_state.select(Some(new_idx));
+                }
+            }
+        }
         Ok(())
     }
 }

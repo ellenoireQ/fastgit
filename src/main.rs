@@ -109,10 +109,44 @@ async fn main() -> io::Result<()> {
                     if let KeyCode::Char('q') = key.code {
                         app.commit_warning_open = false;
                     }
+                } else if app.show_add_remote_dialog {
+                    match key.code {
+                        KeyCode::Esc => app.close_add_remote_dialog(),
+                        KeyCode::Tab => app.add_remote_focus_url = !app.add_remote_focus_url,
+                        KeyCode::Enter => {
+                            let _ = app.confirm_add_remote();
+                        }
+                        KeyCode::Char(c) => app.add_remote_input_push(c),
+                        KeyCode::Backspace => app.add_remote_input_pop(),
+                        _ => {}
+                    }
                 } else if app.branch_focused {
                     match key.code {
-                        KeyCode::Up => app.branch_previous(),
-                        KeyCode::Down => app.branch_next(),
+                        KeyCode::Up => {
+                            if app.branch_tab == crate::app::BranchTab::Local {
+                                app.branch_previous();
+                            } else {
+                                app.remote_previous();
+                            }
+                        }
+                        KeyCode::Down => {
+                            if app.branch_tab == crate::app::BranchTab::Local {
+                                app.branch_next();
+                            } else {
+                                app.remote_next();
+                            }
+                        }
+                        KeyCode::Left | KeyCode::Right => app.branch_tab_toggle(),
+                        KeyCode::Char('a') => {
+                            if app.branch_tab == crate::app::BranchTab::Remote {
+                                app.open_add_remote_dialog();
+                            }
+                        }
+                        KeyCode::Char('d') => {
+                            if app.branch_tab == crate::app::BranchTab::Remote {
+                                let _ = app.remove_selected_remote();
+                            }
+                        }
                         KeyCode::Tab => {
                             app.branch_focused = false;
                             app.increase_window();

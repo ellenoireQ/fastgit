@@ -10,7 +10,7 @@ use ratatui::{
 };
 
 use crate::{
-    app::{App, DiffLineKind, Tab},
+    app::{App, BranchTab, DiffLineKind, Tab},
     helper::helpers::{Dialog, DialogType, Helper},
 };
 
@@ -112,6 +112,10 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
     }
     app.branch_focused = app.window_index == 2;
     draw_footer(vertical_chunks[1], app, f);
+
+    if app.show_add_remote_dialog {
+        draw_add_remote_dialog(f, app);
+    }
 }
 
 fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
@@ -167,12 +171,6 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 })
                 .collect();
 
-            let branches: Vec<ListItem> = app
-                .branches
-                .iter()
-                .map(|b| ListItem::new(b.as_str()))
-                .collect();
-
             if items.is_empty() {
                 let empty = Paragraph::new("Working tree is clean")
                     .block(
@@ -213,26 +211,109 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
 
             draw_commit_graph_panel(f, top_cols[1], app);
 
-            let branch_list = ratatui::widgets::List::new(branches)
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Rounded)
-                        .title("Branches"),
-                )
-                .highlight_style(
-                    Style::default()
-                        .bg(Color::DarkGray)
-                        .add_modifier(Modifier::BOLD),
-                )
-                .highlight_symbol("▶ ")
-                .style(if app.window_index == 2 {
+            let branch_outer_block = Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(if app.window_index == 2 {
                     BORDER_STYLE
                 } else {
                     BORDER_DEFAULT_STYLE
                 });
 
-            f.render_stateful_widget(branch_list, top_cols[2], &mut app.branch_state);
+            let branch_inner_area = branch_outer_block.inner(top_cols[2]);
+            f.render_widget(branch_outer_block, top_cols[2]);
+
+            let branch_inner_chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Length(2), Constraint::Min(0)])
+                .split(branch_inner_area);
+
+            let local_style = if app.branch_tab == BranchTab::Local {
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            };
+            let remote_style = if app.branch_tab == BranchTab::Remote {
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            };
+
+            let tab_line = Line::from(vec![
+                Span::styled(" Local ", local_style),
+                Span::raw(" "),
+                Span::styled(" Remote ", remote_style),
+            ]);
+            let separator = Line::from("─".repeat(branch_inner_area.width as usize));
+            let tab_para = Paragraph::new(vec![tab_line, separator]);
+            f.render_widget(tab_para, branch_inner_chunks[0]);
+
+            match app.branch_tab {
+                BranchTab::Local => {
+                    let branches: Vec<ListItem> = app
+                        .branches
+                        .iter()
+                        .map(|b| ListItem::new(b.as_str()))
+                        .collect();
+
+                    let branch_list = ratatui::widgets::List::new(branches)
+                        .highlight_style(
+                            Style::default()
+                                .bg(Color::DarkGray)
+                                .add_modifier(Modifier::BOLD),
+                        )
+                        .highlight_symbol("▶ ");
+
+                    f.render_stateful_widget(
+                        branch_list,
+                        branch_inner_chunks[1],
+                        &mut app.branch_state,
+                    );
+                }
+                BranchTab::Remote => {
+                    let remote_items: Vec<ListItem> = app
+                        .remotes
+                        .iter()
+                        .map(|(name, url)| {
+                            ListItem::new(Line::from(vec![
+                                Span::styled(
+                                    format!("{} ", name),
+                                    Style::default()
+                                        .fg(Color::Cyan)
+                                        .add_modifier(Modifier::BOLD),
+                                ),
+                                Span::styled(url.clone(), Style::default().fg(Color::Gray)),
+                            ]))
+                        })
+                        .collect();
+
+                    if remote_items.is_empty() {
+                        let empty = Paragraph::new("No remotes  |a| Add  |d| Delete")
+                            .style(Style::default().fg(Color::DarkGray));
+                        f.render_widget(empty, branch_inner_chunks[1]);
+                    } else {
+                        let remote_list = ratatui::widgets::List::new(remote_items)
+                            .highlight_style(
+                                Style::default()
+                                    .bg(Color::DarkGray)
+                                    .add_modifier(Modifier::BOLD),
+                            )
+                            .highlight_symbol("▶ ");
+
+                        f.render_stateful_widget(
+                            remote_list,
+                            branch_inner_chunks[1],
+                            &mut app.remote_state,
+                        );
+                    }
+                }
+            }
 
             let diff_title = match &app.selected_file {
                 Some(p) => format!("Diff — {}", p.display()),
@@ -313,6 +394,8 @@ fn draw_recipe(f: &mut Frame, area: ratatui::layout::Rect) {
         Line::from("|⏎| Select"),
         Line::from("|c| Commit"),
         Line::from("|P| Pushing"),
+        Line::from("|a| Add remote"),
+        Line::from("|d| Del remote"),
         Line::from("|q| Quit"),
     ])
     .wrap(Wrap { trim: true })
@@ -346,10 +429,10 @@ fn draw_commit_graph_panel(f: &mut Frame, area: ratatui::layout::Rect, app: &App
                 .title("Commit Graph"),
         )
         .style(if app.window_index == 1 {
-                    BORDER_STYLE
-                } else {
-                    BORDER_DEFAULT_STYLE
-                });
+            BORDER_STYLE
+        } else {
+            BORDER_DEFAULT_STYLE
+        });
 
     f.render_widget(content, area);
 }
@@ -445,4 +528,73 @@ fn draw_footer(area: Rect, app: &App, f: &mut Frame) {
     ]);
 
     f.render_widget(Paragraph::new(left_line), area);
+}
+
+fn draw_add_remote_dialog(f: &mut Frame, app: &App) {
+    let area = f.area();
+    let dialog_width = 70u16;
+    let dialog_height = 10u16;
+
+    let x = (area.width.saturating_sub(dialog_width)) / 2;
+    let y = (area.height.saturating_sub(dialog_height)) / 2;
+
+    let dialog_area = ratatui::layout::Rect {
+        x,
+        y,
+        width: dialog_width,
+        height: dialog_height,
+    };
+
+    f.render_widget(Clear, dialog_area);
+
+    let outer_block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .title(" Add Remote ")
+        .border_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        );
+
+    let inner = outer_block.inner(dialog_area);
+    f.render_widget(outer_block, dialog_area);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(3), Constraint::Length(3)])
+        .split(inner);
+
+    let name_border = if !app.add_remote_focus_url {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default().fg(Color::White)
+    };
+    let url_border = if app.add_remote_focus_url {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default().fg(Color::White)
+    };
+
+    let name_input = Paragraph::new(app.add_remote_name.as_str())
+        .style(Style::default().fg(Color::White))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .title(" Remote Name ")
+                .border_style(name_border),
+        );
+    f.render_widget(name_input, chunks[0]);
+
+    let url_input = Paragraph::new(app.add_remote_url.as_str())
+        .style(Style::default().fg(Color::White))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .title(" Remote URL ")
+                .border_style(url_border),
+        );
+    f.render_widget(url_input, chunks[1]);
 }
