@@ -114,6 +114,18 @@ async fn main() -> io::Result<()> {
                     if let KeyCode::Char('q') = key.code {
                         app.commit_warning_open = false;
                     }
+                } else if app.checkout_success.is_some() {
+                    app.checkout_success = None;
+                } else if app.checkout_error.is_some() {
+                    app.checkout_error = None;
+                } else if app.show_new_branch_dialog {
+                    match key.code {
+                        KeyCode::Esc => app.close_new_branch_dialog(),
+                        KeyCode::Enter => app.confirm_new_branch(),
+                        KeyCode::Char(c) => app.new_branch_name.push(c),
+                        KeyCode::Backspace => { app.new_branch_name.pop(); }
+                        _ => {}
+                    }
                 } else if app.show_add_remote_dialog {
                     match key.code {
                         KeyCode::Esc => app.close_add_remote_dialog(),
@@ -142,6 +154,16 @@ async fn main() -> io::Result<()> {
                             }
                         }
                         KeyCode::Left | KeyCode::Right => app.branch_tab_toggle(),
+                        KeyCode::Enter => {
+                            if app.branch_tab == crate::app::BranchTab::Local {
+                                app.checkout_selected_branch();
+                            }
+                        }
+                        KeyCode::Char('n') => {
+                            if app.branch_tab == crate::app::BranchTab::Local {
+                                app.open_new_branch_dialog();
+                            }
+                        }
                         KeyCode::Char('a') => {
                             if app.branch_tab == crate::app::BranchTab::Remote {
                                 app.open_add_remote_dialog();

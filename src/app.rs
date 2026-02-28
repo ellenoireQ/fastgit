@@ -75,6 +75,10 @@ pub struct App {
     pub add_remote_name: String,
     pub add_remote_url: String,
     pub add_remote_focus_url: bool,
+    pub show_new_branch_dialog: bool,
+    pub new_branch_name: String,
+    pub checkout_error: Option<String>,
+    pub checkout_success: Option<String>,
 }
 
 impl App {
@@ -122,6 +126,10 @@ impl App {
             add_remote_name: String::new(),
             add_remote_url: String::new(),
             add_remote_focus_url: false,
+            show_new_branch_dialog: false,
+            new_branch_name: String::new(),
+            checkout_error: None,
+            checkout_success: None,
         };
         app_new.get_path();
         app_new.scan_git();
@@ -736,5 +744,73 @@ impl App {
             }
         }
         Ok(())
+    }
+
+    pub fn checkout_selected_branch(&mut self) {
+        let name = match self.branch_state.selected() {
+            Some(i) => match self.branches.get(i) {
+                Some(n) => n.clone(),
+                None => return,
+            },
+            None => return,
+        };
+        if let Err(e) = self.checkout_branch(&name) {
+            self.checkout_error = Some(e.to_string());
+        } else {
+            self.refresh_current_branch();
+            self.refresh_commit_graph();
+            self.checkout_success = Some(format!("Switched to branch '{}'", name));
+        }
+    }
+
+    fn checkout_branch(&mut self, name: &str) -> Result<(), Error> {
+        let repo = Repository::open(&self.cur_dir)?;
+        let (obj, reference) = repo.revparse_ext(name)?;
+        repo.checkout_tree(&obj, None)?;
+        match reference {
+            Some(gref) => repo.set_head(gref.name().unwrap_or(name))?,
+            None => repo.set_head_detached(obj.id())?,
+        }
+        Ok(())
+    }
+
+    pub fn open_new_branch_dialog(&mut self) {
+        self.show_new_branch_dialog = true;
+        self.new_branch_name.clear();
+    }
+
+    pub fn close_new_branch_dialog(&mut self) {
+        self.show_new_branch_dialog = false;
+        self.new_branch_name.clear();
+    }
+
+    pub fn confirm_new_branch(&mut self) {
+        let name = self.new_branch_name.trim().to_string();
+        if name.is_empty() {
+            return;
+        }
+        let result = (|| -> Result<(), Error> {
+            let repo = Repository::open(&self.cur_dir)?;
+            {
+                let head = repo.head()?;
+                let commit = head.peel_to_commit()?;
+                repo.branch(&name, &commit, false)?;
+            }
+            drop(repo);
+            self.checkout_branch(&name)?;
+            Ok(())
+        })();
+        self.close_new_branch_dialog();
+        match result {
+            Ok(()) => {
+                self.refresh_current_branch();
+                self.refresh_commit_graph();
+                let n = name.clone();
+                self.branches.push(n.clone());
+                self.branch_state.select(Some(self.branches.len() - 1));
+                self.checkout_success = Some(format!("Created and switched to '{}'", n));
+            }
+            Err(e) => self.checkout_error = Some(e.to_string()),
+        }
     }
 }

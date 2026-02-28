@@ -165,6 +165,43 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
     if app.show_add_remote_dialog {
         draw_add_remote_dialog(f, app);
     }
+    if app.show_new_branch_dialog {
+        draw_new_branch_dialog(f, app);
+    }
+    if let Some(msg) = app.checkout_success.clone() {
+        let h = Helper;
+        h.draw_dialog(
+            f,
+            Dialog {
+                dialog_type: DialogType::Success,
+                title: "Checkout".to_string(),
+                content: vec![
+                    Line::from(msg),
+                    Line::from(""),
+                    Line::from("Press any key to continue"),
+                ],
+                width: 60,
+                height: 8,
+            },
+        );
+    }
+    if let Some(err) = app.checkout_error.clone() {
+        let h = Helper;
+        h.draw_dialog(
+            f,
+            Dialog {
+                dialog_type: DialogType::Warning,
+                title: "Checkout Failed".to_string(),
+                content: vec![
+                    Line::from(err),
+                    Line::from(""),
+                    Line::from("Press any key to continue"),
+                ],
+                width: 70,
+                height: 8,
+            },
+        );
+    }
 }
 
 fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
@@ -443,6 +480,8 @@ fn draw_recipe(f: &mut Frame, area: ratatui::layout::Rect) {
         Line::from("|⏎| Select"),
         Line::from("|c| Commit"),
         Line::from("|P| Pushing"),
+        Line::from("|⏎| Checkout branch"),
+        Line::from("|n| New branch"),
         Line::from("|a| Add remote"),
         Line::from("|d| Del remote"),
         Line::from("|q| Quit"),
@@ -658,4 +697,56 @@ fn draw_add_remote_dialog(f: &mut Frame, app: &App) {
                 .border_style(url_border),
         );
     f.render_widget(url_input, chunks[1]);
+}
+
+fn draw_new_branch_dialog(f: &mut Frame, app: &App) {
+    let area = f.area();
+    let dialog_width = 60u16;
+    let dialog_height = 7u16;
+
+    let x = (area.width.saturating_sub(dialog_width)) / 2;
+    let y = (area.height.saturating_sub(dialog_height)) / 2;
+
+    let dialog_area = ratatui::layout::Rect {
+        x,
+        y,
+        width: dialog_width,
+        height: dialog_height,
+    };
+
+    f.render_widget(Clear, dialog_area);
+
+    let outer_block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .title(" New Branch ")
+        .border_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        );
+
+    let inner = outer_block.inner(dialog_area);
+    f.render_widget(outer_block, dialog_area);
+
+    let hint = Paragraph::new(vec![
+        Line::from(vec![
+            Span::styled("  Name: ", Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                app.new_branch_name.as_str(),
+                Style::default().fg(Color::White),
+            ),
+            Span::styled("█", Style::default().fg(Color::Yellow)),
+        ]),
+        Line::from(""),
+        Line::from(
+            Span::styled(
+                "  [Enter] Create & checkout   [Esc] Cancel",
+                Style::default()
+                    .fg(Color::DarkGray)
+                    .add_modifier(Modifier::ITALIC),
+            ),
+        ),
+    ]);
+    f.render_widget(hint, inner);
 }
