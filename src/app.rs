@@ -388,7 +388,7 @@ impl App {
         {
             let _ = revwalk.set_sorting(Sort::TIME);
 
-            for oid in revwalk.take(20).flatten() {
+            for oid in revwalk.flatten() {
                 if let Ok(commit) = repo.find_commit(oid) {
                     let short_id = commit.id().to_string().chars().take(7).collect::<String>();
                     let message = commit.summary().unwrap_or("(no message)");
