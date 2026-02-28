@@ -35,6 +35,8 @@ pub struct App {
     pub cur_dir: String,
     pub has_git: bool,
     pub current_branch: String,
+    pub commit_graph: Vec<String>,
+    pub commit_graph_scroll: usize,
     pub tree: FileTree,
     pub file_statuses: HashMap<PathBuf, Status>,
     pub branches: Vec<String>,
@@ -65,6 +67,8 @@ impl App {
             has_git: false,
             cur_dir: "".to_string(),
             current_branch: "-".to_string(),
+            commit_graph: vec![],
+            commit_graph_scroll: 0,
             tree: FileTree::new(std::path::PathBuf::from(".")),
             file_statuses: HashMap::new(),
             branches: vec![],
@@ -314,8 +318,18 @@ impl App {
         self.branch_state.select(Some(prev));
     }
 
+    pub fn commit_graph_scroll_down(&mut self) {
+        if self.commit_graph_scroll < self.commit_graph.len().saturating_sub(1) {
+            self.commit_graph_scroll += 1;
+        }
+    }
+
+    pub fn commit_graph_scroll_up(&mut self) {
+        self.commit_graph_scroll = self.commit_graph_scroll.saturating_sub(1);
+    }
+
     pub fn increase_window(&mut self) {
-        if self.window_index == 2 {
+        if self.window_index == 3 {
             return self.window_index = 0;
         }
         self.window_index += 1;
@@ -332,10 +346,12 @@ impl App {
         if Path::new(dir.as_str()).is_dir() {
             self.has_git = true;
             self.refresh_current_branch();
+            self.refresh_commit_graph();
             return;
         }
         self.has_git = false;
         self.current_branch = "-".to_string();
+        self.commit_graph.clear();
     }
 
     pub fn refresh_current_branch(&mut self) {
@@ -355,6 +371,34 @@ impl App {
         };
 
         self.current_branch = branch.unwrap_or_else(|| "detached".to_string());
+    }
+
+    pub fn refresh_commit_graph(&mut self) {
+        if !self.has_git {
+            self.commit_graph.clear();
+            self.commit_graph_scroll = 0;
+            return;
+        }
+
+        let mut lines = Vec::new();
+
+        if let Ok(repo) = Repository::open(&self.cur_dir)
+            && let Ok(mut revwalk) = repo.revwalk()
+            && revwalk.push_head().is_ok()
+        {
+            let _ = revwalk.set_sorting(Sort::TIME);
+
+            for oid in revwalk.take(20).flatten() {
+                if let Ok(commit) = repo.find_commit(oid) {
+                    let short_id = commit.id().to_string().chars().take(7).collect::<String>();
+                    let message = commit.summary().unwrap_or("(no message)");
+                    lines.push(format!("* {} {}", short_id, message));
+                }
+            }
+        }
+
+        self.commit_graph = lines;
+        self.commit_graph_scroll = 0;
     }
 
     pub fn open_commit_dialog(&mut self) {

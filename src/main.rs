@@ -140,7 +140,9 @@ async fn main() -> io::Result<()> {
                             app.focused = true
                         }
                         KeyCode::Up => {
-                            if app.focused {
+                            if app.window_index == 1 {
+                                app.commit_graph_scroll_up();
+                            } else if app.focused {
                                 app.diff_scroll_up();
                             } else {
                                 app.tree.previous();
@@ -148,7 +150,9 @@ async fn main() -> io::Result<()> {
                             }
                         }
                         KeyCode::Down => {
-                            if app.focused {
+                            if app.window_index == 1 {
+                                app.commit_graph_scroll_down();
+                            } else if app.focused {
                                 app.diff_scroll_down();
                             } else {
                                 app.tree.next();

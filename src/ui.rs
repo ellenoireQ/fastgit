@@ -110,7 +110,7 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
             },
         );
     }
-    app.branch_focused = app.window_index == 1;
+    app.branch_focused = app.window_index == 2;
     draw_footer(vertical_chunks[1], app, f);
 }
 
@@ -124,7 +124,11 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
 
             let top_cols = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
+                .constraints([
+                    Constraint::Percentage(45),
+                    Constraint::Percentage(35),
+                    Constraint::Percentage(20),
+                ])
                 .split(rows[0]);
 
             let bottom_chunks = Layout::default()
@@ -175,7 +179,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                         Block::default()
                             .borders(Borders::ALL)
                             .border_type(BorderType::Rounded)
-                            .title("[1]-Tree"),
+                            .title("Tree"),
                     )
                     .style(if app.window_index == 0 {
                         BORDER_STYLE
@@ -190,7 +194,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                         Block::default()
                             .borders(Borders::ALL)
                             .border_type(BorderType::Rounded)
-                            .title("[1]-Tree"),
+                            .title("Tree"),
                     )
                     .highlight_style(
                         Style::default()
@@ -207,12 +211,14 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 f.render_stateful_widget(list, top_cols[0], &mut app.tree.state);
             }
 
+            draw_commit_graph_panel(f, top_cols[1], app);
+
             let branch_list = ratatui::widgets::List::new(branches)
                 .block(
                     Block::default()
                         .borders(Borders::ALL)
                         .border_type(BorderType::Rounded)
-                        .title("[2]-Branches"),
+                        .title("Branches"),
                 )
                 .highlight_style(
                     Style::default()
@@ -220,17 +226,17 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                         .add_modifier(Modifier::BOLD),
                 )
                 .highlight_symbol("▶ ")
-                .style(if app.window_index == 1 {
+                .style(if app.window_index == 2 {
                     BORDER_STYLE
                 } else {
                     BORDER_DEFAULT_STYLE
                 });
 
-            f.render_stateful_widget(branch_list, top_cols[1], &mut app.branch_state);
+            f.render_stateful_widget(branch_list, top_cols[2], &mut app.branch_state);
 
             let diff_title = match &app.selected_file {
-                Some(p) => format!("[3]-Diff — {}", p.display()),
-                None => "[3]-Diff — No file selected".to_string(),
+                Some(p) => format!("Diff — {}", p.display()),
+                None => "Diff — No file selected".to_string(),
             };
 
             if app.diff_content.is_empty() {
@@ -246,7 +252,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                             .border_type(BorderType::Rounded)
                             .title(diff_title),
                     )
-                    .style(if app.window_index == 2 {
+                    .style(if app.window_index == 3 {
                         BORDER_STYLE
                     } else {
                         BORDER_DEFAULT_STYLE
@@ -285,7 +291,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                             .border_type(BorderType::Rounded)
                             .title(diff_title),
                     )
-                    .style(if app.window_index == 2 {
+                    .style(if app.window_index == 3 {
                         BORDER_STYLE
                     } else {
                         BORDER_DEFAULT_STYLE
@@ -316,6 +322,34 @@ fn draw_recipe(f: &mut Frame, area: ratatui::layout::Rect) {
             .border_type(BorderType::Rounded),
     )
     .add_modifier(Modifier::BOLD);
+
+    f.render_widget(content, area);
+}
+
+fn draw_commit_graph_panel(f: &mut Frame, area: ratatui::layout::Rect, app: &App) {
+    let graph_lines: Vec<Line> = if app.commit_graph.is_empty() {
+        vec![Line::from("No commits found")]
+    } else {
+        app.commit_graph
+            .iter()
+            .skip(app.commit_graph_scroll)
+            .map(|line| Line::from(line.as_str()))
+            .collect()
+    };
+
+    let content = Paragraph::new(graph_lines)
+        .wrap(Wrap { trim: true })
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .title("Commit Graph"),
+        )
+        .style(if app.window_index == 1 {
+                    BORDER_STYLE
+                } else {
+                    BORDER_DEFAULT_STYLE
+                });
 
     f.render_widget(content, area);
 }
@@ -386,8 +420,9 @@ fn draw_footer(area: Rect, app: &App, f: &mut Frame) {
     } else {
         match app.window_index {
             0 => "Tree",
-            1 => "Branches",
-            2 => "Diff",
+            1 => "Commit Graph",
+            2 => "Branches",
+            3 => "Diff",
             _ => "Tree",
         }
     };
