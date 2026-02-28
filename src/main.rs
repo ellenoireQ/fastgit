@@ -125,7 +125,9 @@ async fn main() -> io::Result<()> {
                         KeyCode::Esc => app.close_new_branch_dialog(),
                         KeyCode::Enter => app.confirm_new_branch(),
                         KeyCode::Char(c) => app.new_branch_name.push(c),
-                        KeyCode::Backspace => { app.new_branch_name.pop(); }
+                        KeyCode::Backspace => {
+                            app.new_branch_name.pop();
+                        }
                         _ => {}
                     }
                 } else if app.show_add_remote_dialog {
@@ -205,7 +207,7 @@ async fn main() -> io::Result<()> {
                         }
                         KeyCode::Up => {
                             if app.window_index == 1 {
-                                app.commit_graph_scroll_up();
+                                app.commit_graph_previous();
                             } else if app.focused {
                                 app.diff_scroll_up();
                             } else {
@@ -215,7 +217,7 @@ async fn main() -> io::Result<()> {
                         }
                         KeyCode::Down => {
                             if app.window_index == 1 {
-                                app.commit_graph_scroll_down();
+                                app.commit_graph_next();
                             } else if app.focused {
                                 app.diff_scroll_down();
                             } else {
@@ -236,7 +238,22 @@ async fn main() -> io::Result<()> {
                             };
                         }
                         KeyCode::Left => app.tree.collapse_or_parent(),
-                        KeyCode::Right => app.tree.toggle_expand(),
+                        KeyCode::Right => {
+                            let selected_is_file = app
+                                .tree
+                                .state
+                                .selected()
+                                .and_then(|i| app.tree.items.get(i))
+                                .map(|(_, _, is_dir)| !is_dir)
+                                .unwrap_or(false);
+
+                            if selected_is_file {
+                                app.select_file();
+                                app.focused = true;
+                            } else {
+                                app.tree.toggle_expand();
+                            }
+                        }
                         KeyCode::Char('u') => app.window_index += 1,
 
                         KeyCode::Char('?') => app.show_help = true,

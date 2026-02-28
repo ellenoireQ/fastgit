@@ -502,14 +502,12 @@ fn draw_help_dialog(f: &mut Frame) {
     };
 
     let content = Paragraph::new(vec![
-        Line::from(
-            Span::styled(
-                "  Keybindings",
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ),
+        Line::from(Span::styled(
+            "  Keybindings",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )),
         Line::from(""),
         row("Tab", "Switch window"),
         row("Enter", "Select / Checkout branch"),
@@ -530,14 +528,12 @@ fn draw_help_dialog(f: &mut Frame) {
         row("Home / End", "Jump to start / end"),
         row("Delete", "Delete char at cursor"),
         Line::from(""),
-        Line::from(
-            Span::styled(
-                "  Press any key to close",
-                Style::default()
-                    .fg(Color::DarkGray)
-                    .add_modifier(Modifier::ITALIC),
-            ),
-        ),
+        Line::from(Span::styled(
+            "  Press any key to close",
+            Style::default()
+                .fg(Color::DarkGray)
+                .add_modifier(Modifier::ITALIC),
+        )),
     ])
     .block(
         Block::default()
@@ -554,47 +550,48 @@ fn draw_help_dialog(f: &mut Frame) {
     f.render_widget(content, dialog_area);
 }
 
-fn draw_commit_graph_panel(f: &mut Frame, area: ratatui::layout::Rect, app: &App) {
-    let graph_lines: Vec<Line> = if app.commit_graph.is_empty() {
-        vec![Line::from("No commits found")]
+fn draw_commit_graph_panel(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
+    let total = app.commit_graph.len();
+    let selected = app.commit_graph_state.selected().unwrap_or(0);
+    let current = if total == 0 { 0 } else { selected + 1 };
+
+    let counter = Line::from(Span::styled(
+        format!(" {} of {} ", current, total),
+        Style::default().fg(Color::DarkGray),
+    ))
+    .right_aligned();
+
+    let items: Vec<ListItem> = if app.commit_graph.is_empty() {
+        vec![ListItem::new("No commits found").style(Style::default().fg(Color::DarkGray))]
     } else {
         app.commit_graph
             .iter()
-            .skip(app.commit_graph_scroll)
-            .map(|line| Line::from(line.as_str()))
+            .map(|line| ListItem::new(line.as_str()).style(Style::default().fg(Color::White)))
             .collect()
     };
 
-    let total = app.commit_graph.len();
-    let current = if total == 0 {
-        0
-    } else {
-        app.commit_graph_scroll + 1
-    };
-    let counter = Line::from(
-        Span::styled(
-            format!(" {} of {} ", current, total),
-            Style::default().fg(Color::DarkGray),
-        ),
-    )
-    .right_aligned();
-
-    let content = Paragraph::new(graph_lines)
-        .wrap(Wrap { trim: true })
+    let list = List::new(items)
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .title("Commit Graph")
-                .title_bottom(counter),
+                .title_bottom(counter)
+                .border_style(if app.window_index == 1 {
+                    BORDER_STYLE
+                } else {
+                    BORDER_DEFAULT_STYLE
+                }),
         )
-        .style(if app.window_index == 1 {
-            BORDER_STYLE
-        } else {
-            BORDER_DEFAULT_STYLE
-        });
+        .highlight_style(
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol("▶ ");
 
-    f.render_widget(content, area);
+    f.render_stateful_widget(list, area, &mut app.commit_graph_state);
 }
 
 fn draw_commit_dialog(f: &mut Frame, app: &mut App) {
@@ -811,14 +808,12 @@ fn draw_new_branch_dialog(f: &mut Frame, app: &App) {
             Span::styled("█", Style::default().fg(Color::Yellow)),
         ]),
         Line::from(""),
-        Line::from(
-            Span::styled(
-                "  [Enter] Create & checkout   [Esc] Cancel",
-                Style::default()
-                    .fg(Color::DarkGray)
-                    .add_modifier(Modifier::ITALIC),
-            ),
-        ),
+        Line::from(Span::styled(
+            "  [Enter] Create & checkout   [Esc] Cancel",
+            Style::default()
+                .fg(Color::DarkGray)
+                .add_modifier(Modifier::ITALIC),
+        )),
     ]);
     f.render_widget(hint, inner);
 }

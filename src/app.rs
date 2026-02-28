@@ -42,7 +42,7 @@ pub struct App {
     pub has_git: bool,
     pub current_branch: String,
     pub commit_graph: Vec<String>,
-    pub commit_graph_scroll: usize,
+    pub commit_graph_state: ListState,
     pub tree: FileTree,
     pub file_statuses: HashMap<PathBuf, Status>,
     pub branches: Vec<String>,
@@ -90,7 +90,7 @@ impl App {
             cur_dir: "".to_string(),
             current_branch: "-".to_string(),
             commit_graph: vec![],
-            commit_graph_scroll: 0,
+            commit_graph_state: ListState::default(),
             tree: FileTree::new(std::path::PathBuf::from(".")),
             file_statuses: HashMap::new(),
             branches: vec![],
@@ -368,14 +368,26 @@ impl App {
         self.branch_state.select(Some(prev));
     }
 
-    pub fn commit_graph_scroll_down(&mut self) {
-        if self.commit_graph_scroll < self.commit_graph.len().saturating_sub(1) {
-            self.commit_graph_scroll += 1;
+    pub fn commit_graph_next(&mut self) {
+        if self.commit_graph.is_empty() {
+            return;
         }
+        let next = match self.commit_graph_state.selected() {
+            Some(i) if i + 1 < self.commit_graph.len() => i + 1,
+            _ => 0,
+        };
+        self.commit_graph_state.select(Some(next));
     }
 
-    pub fn commit_graph_scroll_up(&mut self) {
-        self.commit_graph_scroll = self.commit_graph_scroll.saturating_sub(1);
+    pub fn commit_graph_previous(&mut self) {
+        if self.commit_graph.is_empty() {
+            return;
+        }
+        let prev = match self.commit_graph_state.selected() {
+            Some(0) | None => self.commit_graph.len() - 1,
+            Some(i) => i - 1,
+        };
+        self.commit_graph_state.select(Some(prev));
     }
 
     pub fn increase_window(&mut self) {
@@ -402,6 +414,7 @@ impl App {
         self.has_git = false;
         self.current_branch = "-".to_string();
         self.commit_graph.clear();
+        self.commit_graph_state.select(None);
     }
 
     pub fn refresh_current_branch(&mut self) {
@@ -426,7 +439,7 @@ impl App {
     pub fn refresh_commit_graph(&mut self) {
         if !self.has_git {
             self.commit_graph.clear();
-            self.commit_graph_scroll = 0;
+            self.commit_graph_state.select(None);
             return;
         }
 
@@ -448,7 +461,11 @@ impl App {
         }
 
         self.commit_graph = lines;
-        self.commit_graph_scroll = 0;
+        if !self.commit_graph.is_empty() {
+            self.commit_graph_state.select(Some(0));
+        } else {
+            self.commit_graph_state.select(None);
+        }
     }
 
     pub fn open_commit_dialog(&mut self) {
