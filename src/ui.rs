@@ -18,6 +18,8 @@ const BORDER_STYLE: Style = Style::new().yellow().bold();
 const BORDER_DEFAULT_STYLE: Style = Style::new().white().bold();
 
 pub fn draw_ui(f: &mut Frame, app: &mut App) {
+    app.refresh_current_branch();
+
     let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Min(0), Constraint::Length(3)])
@@ -400,7 +402,7 @@ fn draw_footer(area: Rect, app: &App, f: &mut Frame) {
         ),
         Span::raw("  "),
         Span::styled(
-            " master",
+            format!(" {}", app.current_branch),
             Style::default()
                 .fg(Color::Magenta)
                 .add_modifier(Modifier::BOLD),

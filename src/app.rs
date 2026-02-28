@@ -34,6 +34,7 @@ pub struct App {
     pub current_tab: Tab,
     pub cur_dir: String,
     pub has_git: bool,
+    pub current_branch: String,
     pub tree: FileTree,
     pub file_statuses: HashMap<PathBuf, Status>,
     pub branches: Vec<String>,
@@ -63,6 +64,7 @@ impl App {
             current_tab: Tab::Tree,
             has_git: false,
             cur_dir: "".to_string(),
+            current_branch: "-".to_string(),
             tree: FileTree::new(std::path::PathBuf::from(".")),
             file_statuses: HashMap::new(),
             branches: vec![],
@@ -328,9 +330,31 @@ impl App {
     pub fn scan_git(&mut self) {
         let dir = format!("{}/.git", self.cur_dir);
         if Path::new(dir.as_str()).is_dir() {
-            return self.has_git = true;
+            self.has_git = true;
+            self.refresh_current_branch();
+            return;
         }
         self.has_git = false;
+        self.current_branch = "-".to_string();
+    }
+
+    pub fn refresh_current_branch(&mut self) {
+        if !self.has_git {
+            self.current_branch = "-".to_string();
+            return;
+        }
+
+        let branch = if let Ok(repo) = Repository::open(&self.cur_dir) {
+            if let Ok(head) = repo.head() {
+                head.shorthand().map(|name| name.to_string())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        self.current_branch = branch.unwrap_or_else(|| "detached".to_string());
     }
 
     pub fn open_commit_dialog(&mut self) {
