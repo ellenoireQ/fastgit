@@ -56,6 +56,10 @@ pub struct App {
     pub commit_summary: String,
     pub commit_description: String,
     pub commit_focus_description: bool,
+    pub commit_summary_cursor: usize,
+    pub commit_description_cursor: usize,
+    pub commit_summary_scroll: usize,
+    pub commit_description_scroll: usize,
     pub commit_warning_open: bool,
     pub commit_success_open: bool,
     pub staged_count: u32,
@@ -99,6 +103,10 @@ impl App {
             commit_summary: String::new(),
             commit_description: String::new(),
             commit_focus_description: false,
+            commit_summary_cursor: 0,
+            commit_description_cursor: 0,
+            commit_summary_scroll: 0,
+            commit_description_scroll: 0,
             commit_warning_open: false,
             commit_success_open: false,
             staged_count: 0,
@@ -438,6 +446,10 @@ impl App {
         self.commit_summary.clear();
         self.commit_description.clear();
         self.commit_focus_description = false;
+        self.commit_summary_cursor = 0;
+        self.commit_description_cursor = 0;
+        self.commit_summary_scroll = 0;
+        self.commit_description_scroll = 0;
     }
 
     pub fn close_commit_dialog(&mut self) {
@@ -445,21 +457,87 @@ impl App {
         self.commit_summary.clear();
         self.commit_description.clear();
         self.commit_focus_description = false;
+        self.commit_summary_cursor = 0;
+        self.commit_description_cursor = 0;
+        self.commit_summary_scroll = 0;
+        self.commit_description_scroll = 0;
     }
 
-    pub fn commit_message_push(&mut self, c: char) {
+    fn active_commit_text_mut(&mut self) -> (&mut String, &mut usize) {
         if self.commit_focus_description {
-            self.commit_description.push(c);
+            (
+                &mut self.commit_description,
+                &mut self.commit_description_cursor,
+            )
         } else {
-            self.commit_summary.push(c);
+            (&mut self.commit_summary, &mut self.commit_summary_cursor)
         }
     }
 
-    pub fn commit_message_pop(&mut self) {
+    pub fn commit_message_insert(&mut self, c: char) {
+        let (text, cursor) = self.active_commit_text_mut();
+        text.insert(*cursor, c);
+        *cursor += c.len_utf8();
+    }
+
+    pub fn commit_message_backspace(&mut self) {
+        let (text, cursor) = self.active_commit_text_mut();
+        if *cursor == 0 {
+            return;
+        }
+        let mut start = *cursor - 1;
+        while !text.is_char_boundary(start) {
+            start -= 1;
+        }
+        text.remove(start);
+        *cursor = start;
+    }
+
+    pub fn commit_message_delete(&mut self) {
+        let (text, cursor) = self.active_commit_text_mut();
+        if *cursor >= text.len() {
+            return;
+        }
+        text.remove(*cursor);
+    }
+
+    pub fn commit_cursor_left(&mut self) {
+        let (text, cursor) = self.active_commit_text_mut();
+        if *cursor == 0 {
+            return;
+        }
+        let mut pos = *cursor - 1;
+        while !text.is_char_boundary(pos) {
+            pos -= 1;
+        }
+        *cursor = pos;
+    }
+
+    pub fn commit_cursor_right(&mut self) {
+        let (text, cursor) = self.active_commit_text_mut();
+        if *cursor >= text.len() {
+            return;
+        }
+        let mut pos = *cursor + 1;
+        while pos < text.len() && !text.is_char_boundary(pos) {
+            pos += 1;
+        }
+        *cursor = pos;
+    }
+
+    pub fn commit_cursor_home(&mut self) {
         if self.commit_focus_description {
-            self.commit_description.pop();
+            self.commit_description_cursor = 0;
         } else {
-            self.commit_summary.pop();
+            self.commit_summary_cursor = 0;
+        }
+    }
+
+    pub fn commit_cursor_end(&mut self) {
+        if self.commit_focus_description {
+            self.commit_description_cursor = self.commit_description.len();
+        } else {
+            self.commit_summary_cursor = self.commit_summary.len();
         }
     }
 

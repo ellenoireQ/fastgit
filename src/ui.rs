@@ -17,6 +17,55 @@ use crate::{
 const BORDER_STYLE: Style = Style::new().yellow().bold();
 const BORDER_DEFAULT_STYLE: Style = Style::new().white().bold();
 
+fn input_line_with_cursor(
+    text: &str,
+    byte_cursor: usize,
+    scroll: &mut usize,
+    visible_width: usize,
+    active: bool,
+) -> Line<'static> {
+    let chars: Vec<char> = text.chars().collect();
+    let cursor_char_idx = text[..byte_cursor].chars().count();
+
+    if visible_width > 0 {
+        if cursor_char_idx < *scroll {
+            *scroll = cursor_char_idx;
+        } else if cursor_char_idx >= *scroll + visible_width {
+            *scroll = cursor_char_idx + 1 - visible_width;
+        }
+    }
+
+    let vis_start = *scroll;
+    let vis_end = (*scroll + visible_width).min(chars.len());
+
+    let before: String = chars[vis_start..cursor_char_idx.min(vis_end)]
+        .iter()
+        .collect();
+
+    let (cursor_ch, after): (String, String) =
+        if cursor_char_idx < chars.len() && cursor_char_idx < vis_end {
+            let c = chars[cursor_char_idx].to_string();
+            let after_start = (cursor_char_idx + 1).min(vis_end);
+            (c, chars[after_start..vis_end].iter().collect())
+        } else {
+            (" ".to_string(), String::new())
+        };
+
+    if active {
+        Line::from(vec![
+            Span::styled(before, Style::default().fg(Color::White)),
+            Span::styled(
+                cursor_ch,
+                Style::default().fg(Color::Black).bg(Color::White),
+            ),
+            Span::styled(after, Style::default().fg(Color::White)),
+        ])
+    } else {
+        let full: String = chars[vis_start..vis_end].iter().collect();
+        Line::from(vec![Span::styled(full, Style::default().fg(Color::White))])
+    }
+}
+
 pub fn draw_ui(f: &mut Frame, app: &mut App) {
     app.refresh_current_branch();
 
@@ -437,7 +486,7 @@ fn draw_commit_graph_panel(f: &mut Frame, area: ratatui::layout::Rect, app: &App
     f.render_widget(content, area);
 }
 
-fn draw_commit_dialog(f: &mut Frame, app: &App) {
+fn draw_commit_dialog(f: &mut Frame, app: &mut App) {
     let area = f.area();
     let dialog_width = 70;
     let dialog_height = 16;
@@ -459,40 +508,52 @@ fn draw_commit_dialog(f: &mut Frame, app: &App) {
         .constraints([Constraint::Length(3), Constraint::Min(1)])
         .split(dialog_area);
 
+    let summary_visible_width = chunks[0].width.saturating_sub(2) as usize;
     let summary_border_style = if !app.commit_focus_description {
         Style::default().fg(Color::Yellow)
     } else {
         Style::default().fg(Color::White)
     };
 
-    let summary = Paragraph::new(app.commit_summary.as_str())
-        .style(Style::default().fg(Color::White))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .title(" Commit Summary ")
-                .border_style(summary_border_style),
-        );
+    let summary = Paragraph::new(input_line_with_cursor(
+        &app.commit_summary,
+        app.commit_summary_cursor,
+        &mut app.commit_summary_scroll,
+        summary_visible_width,
+        !app.commit_focus_description,
+    ))
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .title(" Commit Summary ")
+            .border_style(summary_border_style),
+    );
 
     f.render_widget(summary, chunks[0]);
 
+    let description_visible_width = chunks[1].width.saturating_sub(2) as usize;
     let description_border_style = if app.commit_focus_description {
         Style::default().fg(Color::Yellow)
     } else {
         Style::default().fg(Color::White)
     };
 
-    let description = Paragraph::new(app.commit_description.as_str())
-        .style(Style::default().fg(Color::White))
-        .wrap(Wrap { trim: false })
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .title(" Commit Description ")
-                .border_style(description_border_style),
-        );
+    let description = Paragraph::new(input_line_with_cursor(
+        &app.commit_description,
+        app.commit_description_cursor,
+        &mut app.commit_description_scroll,
+        description_visible_width,
+        app.commit_focus_description,
+    ))
+    .wrap(Wrap { trim: false })
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .title(" Commit Description ")
+            .border_style(description_border_style),
+    );
 
     f.render_widget(description, chunks[1]);
 }

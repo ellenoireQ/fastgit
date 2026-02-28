@@ -95,8 +95,13 @@ async fn main() -> io::Result<()> {
                             }
                             app.close_commit_dialog();
                         }
-                        KeyCode::Char(c) => app.commit_message_push(c),
-                        KeyCode::Backspace => app.commit_message_pop(),
+                        KeyCode::Char(c) => app.commit_message_insert(c),
+                        KeyCode::Backspace => app.commit_message_backspace(),
+                        KeyCode::Delete => app.commit_message_delete(),
+                        KeyCode::Left => app.commit_cursor_left(),
+                        KeyCode::Right => app.commit_cursor_right(),
+                        KeyCode::Home => app.commit_cursor_home(),
+                        KeyCode::End => app.commit_cursor_end(),
                         _ => {}
                     }
                 } else if app.commit_success_open {
