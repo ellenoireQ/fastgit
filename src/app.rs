@@ -263,6 +263,14 @@ impl App {
 
         index.write()?;
 
+        let updated_status = repo.status_file(path).unwrap_or(Status::CURRENT);
+        let key = path.to_path_buf();
+        if updated_status == Status::CURRENT {
+            self.file_statuses.remove(&key);
+        } else {
+            self.file_statuses.insert(key, updated_status);
+        }
+
         Ok(())
     }
 

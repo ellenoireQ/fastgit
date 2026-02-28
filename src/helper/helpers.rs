@@ -32,15 +32,22 @@ pub struct Helper;
 
 impl Helper {
     pub fn get_txt_icon(&self, st: Status) -> &'static str {
-        if st.contains(Status::WT_MODIFIED) || st.contains(Status::INDEX_MODIFIED) {
+        if st.contains(Status::INDEX_NEW)
+            || st.contains(Status::INDEX_MODIFIED)
+            || st.contains(Status::INDEX_DELETED)
+            || st.contains(Status::INDEX_RENAMED)
+            || st.contains(Status::INDEX_TYPECHANGE)
+        {
+            "S"
+        } else if st.contains(Status::WT_MODIFIED) {
             "M"
-        } else if st.contains(Status::WT_NEW) || st.contains(Status::INDEX_NEW) {
+        } else if st.contains(Status::WT_NEW) {
             "N"
-        } else if st.contains(Status::WT_DELETED) || st.contains(Status::INDEX_DELETED) {
+        } else if st.contains(Status::WT_DELETED) {
             "D"
-        } else if st.contains(Status::WT_RENAMED) || st.contains(Status::INDEX_RENAMED) {
+        } else if st.contains(Status::WT_RENAMED) {
             "R"
-        } else if st.contains(Status::WT_TYPECHANGE) || st.contains(Status::INDEX_TYPECHANGE) {
+        } else if st.contains(Status::WT_TYPECHANGE) {
             "T"
         } else {
             "??"
@@ -48,13 +55,20 @@ impl Helper {
     }
 
     pub fn get_status_color(&self, st: Status) -> Color {
-        if st.contains(Status::WT_NEW) || st.contains(Status::INDEX_NEW) {
+        if st.contains(Status::INDEX_NEW)
+            || st.contains(Status::INDEX_MODIFIED)
+            || st.contains(Status::INDEX_DELETED)
+            || st.contains(Status::INDEX_RENAMED)
+            || st.contains(Status::INDEX_TYPECHANGE)
+        {
             Color::Green
-        } else if st.contains(Status::WT_MODIFIED) || st.contains(Status::INDEX_MODIFIED) {
+        } else if st.contains(Status::WT_NEW) {
+            Color::Green
+        } else if st.contains(Status::WT_MODIFIED) {
             Color::Yellow
-        } else if st.contains(Status::WT_DELETED) || st.contains(Status::INDEX_DELETED) {
+        } else if st.contains(Status::WT_DELETED) {
             Color::Red
-        } else if st.contains(Status::WT_RENAMED) || st.contains(Status::INDEX_RENAMED) {
+        } else if st.contains(Status::WT_RENAMED) {
             Color::Cyan
         } else {
             Color::Magenta
