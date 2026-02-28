@@ -168,6 +168,9 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
     if app.show_new_branch_dialog {
         draw_new_branch_dialog(f, app);
     }
+    if app.show_help {
+        draw_help_dialog(f);
+    }
     if let Some(msg) = app.checkout_success.clone() {
         let h = Helper;
         h.draw_dialog(
@@ -223,7 +226,7 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
 
             let bottom_chunks = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
+                .constraints([Constraint::Percentage(100)])
                 .split(rows[1]);
 
             let h = Helper;
@@ -425,7 +428,6 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                         BORDER_DEFAULT_STYLE
                     });
                 f.render_widget(empty, bottom_chunks[0]);
-                draw_recipe(f, bottom_chunks[1]);
             } else {
                 let visible_lines: Vec<ListItem> = app
                     .diff_content
@@ -465,36 +467,91 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                     });
 
                 f.render_widget(diff_list, bottom_chunks[0]);
-                draw_recipe(f, bottom_chunks[1]);
             }
         }
     }
 }
 
-fn draw_recipe(f: &mut Frame, area: ratatui::layout::Rect) {
+fn draw_help_dialog(f: &mut Frame) {
+    let area = f.area();
+    let dialog_width = 52u16;
+    let dialog_height = 24u16;
+
+    let x = (area.width.saturating_sub(dialog_width)) / 2;
+    let y = (area.height.saturating_sub(dialog_height)) / 2;
+
+    let dialog_area = ratatui::layout::Rect {
+        x,
+        y,
+        width: dialog_width,
+        height: dialog_height,
+    };
+
+    f.render_widget(Clear, dialog_area);
+
+    let row = |key: &'static str, desc: &'static str| -> Line<'static> {
+        Line::from(vec![
+            Span::styled(
+                format!("  {:>14}  ", key),
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(desc, Style::default().fg(Color::White)),
+        ])
+    };
+
     let content = Paragraph::new(vec![
-        Line::from("🕮  Book").style(Style::default().cyan()),
-        Line::from("A brief guide to using this application."),
+        Line::from(
+            Span::styled(
+                "  Keybindings",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ),
         Line::from(""),
-        Line::from("|⇥| Switching window"),
-        Line::from("|⏎| Select"),
-        Line::from("|c| Commit"),
-        Line::from("|P| Pushing"),
-        Line::from("|⏎| Checkout branch"),
-        Line::from("|n| New branch"),
-        Line::from("|a| Add remote"),
-        Line::from("|d| Del remote"),
-        Line::from("|q| Quit"),
+        row("Tab", "Switch window"),
+        row("Enter", "Select / Checkout branch"),
+        row("Esc", "Deselect / Close dialog"),
+        row("Up / Down", "Navigate list"),
+        row("Left / Right", "Switch branch tab"),
+        row("Space", "Stage / unstage file"),
+        Line::from(""),
+        row("c", "Commit staged changes"),
+        row("P", "Push to remote"),
+        row("n", "New branch (Local tab)"),
+        row("a", "Add remote (Remote tab)"),
+        row("d", "Delete remote (Remote tab)"),
+        row("s", "Rescan git status"),
+        row("q", "Quit"),
+        Line::from(""),
+        row("Left / Right", "Move cursor in input"),
+        row("Home / End", "Jump to start / end"),
+        row("Delete", "Delete char at cursor"),
+        Line::from(""),
+        Line::from(
+            Span::styled(
+                "  Press any key to close",
+                Style::default()
+                    .fg(Color::DarkGray)
+                    .add_modifier(Modifier::ITALIC),
+            ),
+        ),
     ])
-    .wrap(Wrap { trim: true })
     .block(
         Block::default()
             .borders(Borders::ALL)
-            .border_type(BorderType::Rounded),
-    )
-    .add_modifier(Modifier::BOLD);
+            .border_type(BorderType::Rounded)
+            .title(" ? Help ")
+            .border_style(
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
+    );
 
-    f.render_widget(content, area);
+    f.render_widget(content, dialog_area);
 }
 
 fn draw_commit_graph_panel(f: &mut Frame, area: ratatui::layout::Rect, app: &App) {

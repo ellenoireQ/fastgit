@@ -79,6 +79,7 @@ pub struct App {
     pub new_branch_name: String,
     pub checkout_error: Option<String>,
     pub checkout_success: Option<String>,
+    pub show_help: bool,
 }
 
 impl App {
@@ -130,6 +131,7 @@ impl App {
             new_branch_name: String::new(),
             checkout_error: None,
             checkout_success: None,
+            show_help: false,
         };
         app_new.get_path();
         app_new.scan_git();

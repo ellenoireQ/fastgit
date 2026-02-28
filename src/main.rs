@@ -118,6 +118,8 @@ async fn main() -> io::Result<()> {
                     app.checkout_success = None;
                 } else if app.checkout_error.is_some() {
                     app.checkout_error = None;
+                } else if app.show_help {
+                    app.show_help = false;
                 } else if app.show_new_branch_dialog {
                     match key.code {
                         KeyCode::Esc => app.close_new_branch_dialog(),
@@ -178,6 +180,7 @@ async fn main() -> io::Result<()> {
                             app.branch_focused = false;
                             app.increase_window();
                         }
+                        KeyCode::Char('?') => app.show_help = true,
                         KeyCode::Char('q') => break,
                         _ => {}
                     }
@@ -234,9 +237,9 @@ async fn main() -> io::Result<()> {
                         }
                         KeyCode::Left => app.tree.collapse_or_parent(),
                         KeyCode::Right => app.tree.toggle_expand(),
-                        // For testing purpose
                         KeyCode::Char('u') => app.window_index += 1,
 
+                        KeyCode::Char('?') => app.show_help = true,
                         KeyCode::Char('q') => break,
 
                         _ => {}
