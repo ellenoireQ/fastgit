@@ -141,6 +141,8 @@ async fn main() -> io::Result<()> {
                         KeyCode::Enter => {
                             if app.branch_tab == crate::app::BranchTab::Local {
                                 app.checkout_selected_branch();
+                            } else {
+                                app.set_push_remote_from_selection();
                             }
                         }
                         KeyCode::Char('n') => {

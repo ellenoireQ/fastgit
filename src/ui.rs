@@ -524,6 +524,7 @@ fn draw_help_dialog(f: &mut Frame) {
         Line::from(""),
         row("c", "Commit staged changes"),
         row("P", "Push to remote"),
+        row("Enter (Remote)", "Set selected remote for push"),
         row("n", "New branch (Local tab)"),
         row("a", "Add remote (Remote tab)"),
         row("d", "Delete remote (Remote tab)"),
@@ -685,6 +686,11 @@ fn draw_footer(area: Rect, app: &App, f: &mut Frame) {
         }
     };
 
+    let push_remote = app
+        .push_remote_override
+        .as_deref()
+        .unwrap_or("default");
+
     let left_line = Line::from(vec![
         Span::styled(
             format!(" {} ", focused_panel),
@@ -699,6 +705,11 @@ fn draw_footer(area: Rect, app: &App, f: &mut Frame) {
             Style::default()
                 .fg(Color::Magenta)
                 .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw("  "),
+        Span::styled(
+            format!("⇧ {}", push_remote),
+            Style::default().fg(Color::Cyan),
         ),
     ]);
 

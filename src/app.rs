@@ -74,6 +74,7 @@ pub struct App {
     pub branch_tab: BranchTab,
     pub remotes: Vec<(String, String)>,
     pub remote_state: ListState,
+    pub push_remote_override: Option<String>,
     pub show_add_remote_dialog: bool,
     pub add_remote_name: String,
     pub add_remote_url: String,
@@ -130,6 +131,7 @@ impl App {
             branch_tab: BranchTab::Local,
             remotes: vec![],
             remote_state: ListState::default(),
+            push_remote_override: None,
             show_add_remote_dialog: false,
             add_remote_name: String::new(),
             add_remote_url: String::new(),
@@ -161,6 +163,7 @@ impl App {
             self.diff_content.clear();
             self.branch_state.select(None);
             self.remote_state.select(None);
+            self.push_remote_override = None;
             return;
         }
 
@@ -225,10 +228,20 @@ impl App {
 
             if self.remotes.is_empty() {
                 self.remote_state.select(None);
+                self.push_remote_override = None;
             } else {
                 let selected = self.remote_state.selected().unwrap_or(0);
                 self.remote_state
                     .select(Some(selected.min(self.remotes.len() - 1)));
+
+                if let Some(selected_remote) = &self.push_remote_override
+                    && !self
+                        .remotes
+                        .iter()
+                        .any(|(name, _)| name == selected_remote)
+                {
+                    self.push_remote_override = None;
+                }
             }
         }
 
@@ -754,18 +767,24 @@ impl App {
     }
 
     pub fn start_push(&mut self) {
-        if self.push_in_progress {
+        if self.push_in_progress || !self.has_git {
             return;
         }
 
         self.push_in_progress = true;
 
         let cur_dir = self.cur_dir.clone();
+        let preferred_remote = self.push_remote_override.clone();
+        let current_branch = if self.current_branch == "-" || self.current_branch == "detached" {
+            None
+        } else {
+            Some(self.current_branch.clone())
+        };
         let (tx, rx) = mpsc::channel();
         self.push_result_rx = Some(rx);
 
         std::thread::spawn(move || {
-            let result = Self::push_repo_sync(&cur_dir);
+            let result = Self::push_repo_sync(&cur_dir, preferred_remote, current_branch);
             let _ = tx.send(result.map_err(|e| e.to_string()));
         });
     }
@@ -814,9 +833,26 @@ impl App {
         }
     }
 
-    fn push_repo_sync(cur_dir: &str) -> Result<(), Error> {
-        let output = std::process::Command::new("git")
-            .arg("push")
+    fn push_repo_sync(
+        cur_dir: &str,
+        preferred_remote: Option<String>,
+        current_branch: Option<String>,
+    ) -> Result<(), Error> {
+        let default_remote = Self::resolve_default_remote(cur_dir, current_branch.as_deref());
+        let remote_to_use = preferred_remote.or(default_remote);
+
+        let mut command = std::process::Command::new("git");
+        command.arg("push");
+
+        if let Some(remote) = &remote_to_use {
+            command.arg(remote);
+
+            if let Some(branch) = &current_branch {
+                command.arg(branch);
+            }
+        }
+
+        let output = command
             .current_dir(cur_dir)
             .output()
             .map_err(|e| Error::from_str(&e.to_string()))?;
@@ -827,6 +863,62 @@ impl App {
         }
 
         Ok(())
+    }
+
+    fn resolve_default_remote(cur_dir: &str, current_branch: Option<&str>) -> Option<String> {
+        if let Some(branch) = current_branch {
+            let config_key = format!("branch.{}.remote", branch);
+            let output = std::process::Command::new("git")
+                .arg("config")
+                .arg("--get")
+                .arg(config_key)
+                .current_dir(cur_dir)
+                .output()
+                .ok()?;
+
+            if output.status.success() {
+                let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !value.is_empty() {
+                    return Some(value);
+                }
+            }
+        }
+
+        let output = std::process::Command::new("git")
+            .arg("remote")
+            .current_dir(cur_dir)
+            .output()
+            .ok()?;
+
+        if !output.status.success() {
+            return None;
+        }
+
+        let remotes: Vec<String> = String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(ToString::to_string)
+            .collect();
+
+        if remotes.is_empty() {
+            return None;
+        }
+
+        if remotes.iter().any(|r| r == "origin") {
+            Some("origin".to_string())
+        } else {
+            remotes.first().cloned()
+        }
+    }
+
+    pub fn set_push_remote_from_selection(&mut self) {
+        if let Some(idx) = self.remote_state.selected()
+            && let Some((name, _)) = self.remotes.get(idx)
+        {
+            self.push_remote_override = Some(name.clone());
+            self.checkout_success = Some(format!("Push remote set to '{}'", name));
+        }
     }
 
     fn pull_repo_sync(cur_dir: &str) -> Result<(), Error> {
