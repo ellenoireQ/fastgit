@@ -42,6 +42,7 @@ pub struct App {
     pub has_git: bool,
     pub current_branch: String,
     pub commit_graph: Vec<String>,
+    pub commit_graph_oids: Vec<String>,
     pub commit_graph_state: ListState,
     pub tree: FileTree,
     pub file_statuses: HashMap<PathBuf, Status>,
@@ -80,6 +81,7 @@ pub struct App {
     pub checkout_error: Option<String>,
     pub checkout_success: Option<String>,
     pub show_help: bool,
+    pub commit_diff_label: Option<String>,
 }
 
 impl App {
@@ -90,6 +92,7 @@ impl App {
             cur_dir: "".to_string(),
             current_branch: "-".to_string(),
             commit_graph: vec![],
+            commit_graph_oids: vec![],
             commit_graph_state: ListState::default(),
             tree: FileTree::new(std::path::PathBuf::from(".")),
             file_statuses: HashMap::new(),
@@ -132,6 +135,7 @@ impl App {
             checkout_error: None,
             checkout_success: None,
             show_help: false,
+            commit_diff_label: None,
         };
         app_new.get_path();
         app_new.scan_git();
@@ -215,6 +219,7 @@ impl App {
 
     pub fn load_diff(&mut self) {
         self.diff_content.clear();
+        self.commit_diff_label = None;
 
         let file_path = match &self.selected_file {
             Some(p) => p.clone(),
@@ -377,6 +382,7 @@ impl App {
             _ => 0,
         };
         self.commit_graph_state.select(Some(next));
+        self.load_commit_diff(next);
     }
 
     pub fn commit_graph_previous(&mut self) {
@@ -388,6 +394,7 @@ impl App {
             Some(i) => i - 1,
         };
         self.commit_graph_state.select(Some(prev));
+        self.load_commit_diff(prev);
     }
 
     pub fn increase_window(&mut self) {
@@ -414,6 +421,7 @@ impl App {
         self.has_git = false;
         self.current_branch = "-".to_string();
         self.commit_graph.clear();
+        self.commit_graph_oids.clear();
         self.commit_graph_state.select(None);
     }
 
@@ -439,11 +447,13 @@ impl App {
     pub fn refresh_commit_graph(&mut self) {
         if !self.has_git {
             self.commit_graph.clear();
+            self.commit_graph_oids.clear();
             self.commit_graph_state.select(None);
             return;
         }
 
         let mut lines = Vec::new();
+        let mut oids = Vec::new();
 
         if let Ok(repo) = Repository::open(&self.cur_dir)
             && let Ok(mut revwalk) = repo.revwalk()
@@ -456,15 +466,86 @@ impl App {
                     let short_id = commit.id().to_string().chars().take(7).collect::<String>();
                     let message = commit.summary().unwrap_or("(no message)");
                     lines.push(format!("* {} {}", short_id, message));
+                    oids.push(commit.id().to_string());
                 }
             }
         }
 
         self.commit_graph = lines;
+        self.commit_graph_oids = oids;
         if !self.commit_graph.is_empty() {
             self.commit_graph_state.select(Some(0));
+            self.load_commit_diff(0);
         } else {
             self.commit_graph_state.select(None);
+        }
+    }
+
+    pub fn load_commit_diff(&mut self, index: usize) {
+        self.diff_content.clear();
+        self.diff_scroll = 0;
+
+        let oid_str = match self.commit_graph_oids.get(index) {
+            Some(s) => s.clone(),
+            None => return,
+        };
+
+        let repo = match Repository::open(&self.cur_dir) {
+            Ok(r) => r,
+            Err(_) => return,
+        };
+
+        let oid = match git2::Oid::from_str(&oid_str) {
+            Ok(o) => o,
+            Err(_) => return,
+        };
+
+        let commit = match repo.find_commit(oid) {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+
+        let commit_tree = match commit.tree() {
+            Ok(t) => t,
+            Err(_) => return,
+        };
+
+        let parent_tree = commit.parent(0).ok().and_then(|p| p.tree().ok());
+
+        let diff = match repo.diff_tree_to_tree(parent_tree.as_ref(), Some(&commit_tree), None) {
+            Ok(d) => d,
+            Err(_) => return,
+        };
+
+        let mut lines: Vec<DiffLine> = Vec::new();
+        let _ = diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+            let content = String::from_utf8_lossy(line.content()).to_string();
+            let kind = match line.origin() {
+                '+' => DiffLineKind::Add,
+                '-' => DiffLineKind::Delete,
+                'H' | 'F' => DiffLineKind::Header,
+                _ => DiffLineKind::Context,
+            };
+            let kind = if content.starts_with("@@") {
+                DiffLineKind::Header
+            } else {
+                kind
+            };
+            lines.push(DiffLine {
+                kind,
+                content: content.trim_end_matches('\n').to_string(),
+            });
+            true
+        });
+
+        self.diff_content = lines;
+        self.selected_file = None;
+
+        let short = &oid_str[..7.min(oid_str.len())];
+        if let Some(label) = self.commit_graph.get(index) {
+            self.commit_diff_label = Some(format!("Commit {}", label.trim_start_matches("* ")));
+        } else {
+            self.commit_diff_label = Some(format!("Commit {}", short));
         }
     }
 

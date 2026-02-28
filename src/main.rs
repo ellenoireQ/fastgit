@@ -202,8 +202,13 @@ async fn main() -> io::Result<()> {
                             app.start_push();
                         }
                         KeyCode::Enter => {
-                            app.select_file();
-                            app.focused = true
+                            if app.window_index == 1 {
+                                app.window_index = 3;
+                                app.focused = true;
+                            } else {
+                                app.select_file();
+                                app.focused = true;
+                            }
                         }
                         KeyCode::Up => {
                             if app.window_index == 1 {

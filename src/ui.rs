@@ -404,13 +404,19 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                 }
             }
 
-            let diff_title = match &app.selected_file {
-                Some(p) => format!("Diff — {}", p.display()),
-                None => "Diff — No file selected".to_string(),
+            let diff_title = if let Some(label) = &app.commit_diff_label {
+                format!("Diff — {}", label)
+            } else {
+                match &app.selected_file {
+                    Some(p) => format!("Diff — {}", p.display()),
+                    None => "Diff — No file selected".to_string(),
+                }
             };
 
             if app.diff_content.is_empty() {
-                let msg = if app.selected_file.is_some() {
+                let msg = if app.commit_diff_label.is_some() {
+                    "No changes in this commit"
+                } else if app.selected_file.is_some() {
                     "No changes detected for this file"
                 } else {
                     "Select a file and press Enter"
