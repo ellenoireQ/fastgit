@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Fitrian Musya
 
 use ratatui::widgets::ListState;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
@@ -82,6 +83,14 @@ impl FileTree {
     }
 
     pub fn populate_from_paths(&mut self, paths: Vec<PathBuf>) {
+        let selected_path = self
+            .state
+            .selected()
+            .and_then(|idx| self.items.get(idx).map(|(path, _, _)| path.clone()));
+
+        let mut expanded_dirs = HashSet::new();
+        Self::collect_expanded_dirs(&self.root, &mut expanded_dirs);
+
         self.root.children.clear();
         let root_path = self.root.path.clone();
 
@@ -95,9 +104,45 @@ impl FileTree {
             self.root
                 .insert(&root_path.join(relative_path), relative_path);
         }
+
+        Self::apply_expanded_dirs(&mut self.root, &expanded_dirs);
         self.update_items();
-        if !self.items.is_empty() {
+
+        if self.items.is_empty() {
+            self.state.select(None);
+            return;
+        }
+
+        if let Some(selected_path) = selected_path
+            && let Some((idx, _)) = self
+                .items
+                .iter()
+                .enumerate()
+                .find(|(_, (path, _, _))| *path == selected_path)
+        {
+            self.state.select(Some(idx));
+        } else {
             self.state.select(Some(0));
+        }
+    }
+
+    fn collect_expanded_dirs(node: &FileNode, expanded_dirs: &mut HashSet<PathBuf>) {
+        if node.is_dir && node.expanded {
+            expanded_dirs.insert(node.path.clone());
+        }
+
+        for child in &node.children {
+            Self::collect_expanded_dirs(child, expanded_dirs);
+        }
+    }
+
+    fn apply_expanded_dirs(node: &mut FileNode, expanded_dirs: &HashSet<PathBuf>) {
+        if node.is_dir {
+            node.expanded = expanded_dirs.contains(&node.path);
+        }
+
+        for child in &mut node.children {
+            Self::apply_expanded_dirs(child, expanded_dirs);
         }
     }
 

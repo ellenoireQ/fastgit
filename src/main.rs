@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Fitrian Musya
 
 use std::io;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
@@ -17,6 +17,9 @@ mod file_tree;
 mod helper;
 mod ui;
 
+const AUTO_REFRESH_INTERVAL: Duration = Duration::from_secs(3);
+const AUTO_PULL_INTERVAL: Duration = Duration::from_secs(60);
+
 #[tokio::main]
 async fn main() -> io::Result<()> {
     enable_raw_mode()?;
@@ -26,10 +29,25 @@ async fn main() -> io::Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::new();
+    let mut last_auto_refresh = Instant::now();
+    let mut last_auto_pull = Instant::now();
+
     loop {
+        if last_auto_refresh.elapsed() >= AUTO_REFRESH_INTERVAL {
+            app.scan_git();
+            app.refresh_repository_view();
+            last_auto_refresh = Instant::now();
+        }
+
+        if last_auto_pull.elapsed() >= AUTO_PULL_INTERVAL {
+            app.start_pull();
+            last_auto_pull = Instant::now();
+        }
+
         terminal.draw(|f| draw_ui(f, &mut app))?;
 
         app.check_push_result();
+        app.check_pull_result();
 
         if !event::poll(Duration::from_millis(100))? {
             continue;
@@ -46,45 +64,7 @@ async fn main() -> io::Result<()> {
                                 match app.commit() {
                                     Ok(_oid) => {
                                         app.scan_git();
-                                        app.file_statuses.clear();
-                                        app.tree = crate::file_tree::FileTree::new(
-                                            std::path::PathBuf::from("."),
-                                        );
-                                        app.diff_content.clear();
-                                        app.selected_file = None;
-
-                                        if app.has_git {
-                                            if let Ok(repo) = git2::Repository::open(&app.cur_dir) {
-                                                let mut options = git2::StatusOptions::new();
-                                                options.include_untracked(true);
-
-                                                if let Ok(statuses) =
-                                                    repo.statuses(Some(&mut options))
-                                                {
-                                                    let mut paths: Vec<std::path::PathBuf> =
-                                                        Vec::new();
-
-                                                    for entry in statuses.iter() {
-                                                        if entry
-                                                            .status()
-                                                            .contains(git2::Status::IGNORED)
-                                                        {
-                                                            continue;
-                                                        }
-                                                        if let Some(p) = entry.path() {
-                                                            let path = std::path::PathBuf::from(p);
-                                                            app.file_statuses.insert(
-                                                                path.clone(),
-                                                                entry.status(),
-                                                            );
-                                                            paths.push(path);
-                                                        }
-                                                    }
-
-                                                    app.tree.populate_from_paths(paths);
-                                                }
-                                            }
-                                        }
+                                        app.refresh_repository_view();
 
                                         app.commit_success_open = true;
                                     }
@@ -190,7 +170,10 @@ async fn main() -> io::Result<()> {
                     // INFO: Main Terminal Key logic
                     match key.code {
                         KeyCode::Tab => app.increase_window(),
-                        KeyCode::Char('s') => app.scan_git(),
+                        KeyCode::Char('s') => {
+                            app.scan_git();
+                            app.refresh_repository_view();
+                        }
                         KeyCode::Char('c') => {
                             if app.staged_count == 0 {
                                 app.commit_warning_open = true;

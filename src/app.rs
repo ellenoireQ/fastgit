@@ -68,6 +68,8 @@ pub struct App {
     pub push_success_open: bool,
     pub push_in_progress: bool,
     pub push_result_rx: Option<mpsc::Receiver<Result<(), String>>>,
+    pub pull_in_progress: bool,
+    pub pull_result_rx: Option<mpsc::Receiver<Result<(), String>>>,
     pub branch_focused: bool,
     pub branch_tab: BranchTab,
     pub remotes: Vec<(String, String)>,
@@ -122,6 +124,8 @@ impl App {
             push_success_open: false,
             push_in_progress: false,
             push_result_rx: None,
+            pull_in_progress: false,
+            pull_result_rx: None,
             branch_focused: false,
             branch_tab: BranchTab::Local,
             remotes: vec![],
@@ -139,70 +143,104 @@ impl App {
         };
         app_new.get_path();
         app_new.scan_git();
+        app_new.refresh_repository_view();
 
-        if app_new.has_git
-            && let Ok(repo) = Repository::open(&app_new.cur_dir)
-            && let Ok(statuses) = repo.statuses(None)
-        {
-            let mut paths: Vec<std::path::PathBuf> = Vec::new();
+        app_new
+    }
 
-            for entry in statuses.iter() {
-                if entry.status().contains(Status::IGNORED) {
-                    continue;
-                }
-                if let Some(p) = entry.path() {
-                    let path = std::path::PathBuf::from(p);
-                    app_new.file_statuses.insert(path.clone(), entry.status());
-                    paths.push(path);
-                }
-            }
+    pub fn refresh_repository_view(&mut self) {
+        self.file_statuses.clear();
+        self.staged_count = 0;
+        self.branches.clear();
+        self.remotes.clear();
 
+        if !self.has_git {
+            self.tree.root.children.clear();
+            self.tree.update_items();
+            self.selected_file = None;
+            self.diff_content.clear();
+            self.branch_state.select(None);
+            self.remote_state.select(None);
+            return;
+        }
+
+        if let Ok(repo) = Repository::open(&self.cur_dir) {
+            let mut paths: Vec<PathBuf> = Vec::new();
             let mut options = git2::StatusOptions::new();
             options.include_untracked(true);
 
             if let Ok(statuses) = repo.statuses(Some(&mut options)) {
                 for entry in statuses.iter() {
-                    if entry.status().contains(Status::WT_NEW) {
-                        if let Some(p) = entry.path() {
-                            let path = std::path::PathBuf::from(p);
-                            if !paths.contains(&path) {
-                                app_new.file_statuses.insert(path.clone(), entry.status());
-                                paths.push(path);
-                            }
-                        }
+                    let status = entry.status();
+                    if status.contains(Status::IGNORED) {
+                        continue;
+                    }
+
+                    if let Some(p) = entry.path() {
+                        let path = PathBuf::from(p);
+                        self.file_statuses.insert(path.clone(), status);
+                        paths.push(path);
+                    }
+
+                    let staged_mask = Status::INDEX_NEW
+                        | Status::INDEX_MODIFIED
+                        | Status::INDEX_DELETED
+                        | Status::INDEX_RENAMED
+                        | Status::INDEX_TYPECHANGE;
+
+                    if status.intersects(staged_mask) {
+                        self.staged_count += 1;
                     }
                 }
             }
 
-            app_new.tree.populate_from_paths(paths);
+            self.tree.populate_from_paths(paths);
 
             if let Ok(branches) = repo.branches(None) {
                 for branch in branches {
                     if let Ok((branch, _)) = branch
                         && let Ok(Some(name)) = branch.name()
                     {
-                        app_new.branches.push(name.to_string());
+                        self.branches.push(name.to_string());
                     }
                 }
-                if !app_new.branches.is_empty() {
-                    app_new.branch_state.select(Some(0));
-                }
+            }
+
+            if self.branches.is_empty() {
+                self.branch_state.select(None);
+            } else {
+                let selected = self.branch_state.selected().unwrap_or(0);
+                self.branch_state
+                    .select(Some(selected.min(self.branches.len() - 1)));
             }
 
             if let Ok(rmts) = repo.remotes() {
                 for name in rmts.iter().flatten() {
                     if let Ok(remote) = repo.find_remote(name) {
                         let url = remote.url().unwrap_or("").to_string();
-                        app_new.remotes.push((name.to_string(), url));
+                        self.remotes.push((name.to_string(), url));
                     }
                 }
-                if !app_new.remotes.is_empty() {
-                    app_new.remote_state.select(Some(0));
-                }
+            }
+
+            if self.remotes.is_empty() {
+                self.remote_state.select(None);
+            } else {
+                let selected = self.remote_state.selected().unwrap_or(0);
+                self.remote_state
+                    .select(Some(selected.min(self.remotes.len() - 1)));
             }
         }
 
-        app_new
+        if let Some(selected) = self.selected_file.clone() {
+            if self.file_statuses.contains_key(&selected) {
+                self.load_diff();
+            } else {
+                self.selected_file = None;
+                self.diff_content.clear();
+                self.commit_diff_label = None;
+            }
+        }
     }
 
     pub fn select_file(&mut self) {
@@ -449,8 +487,15 @@ impl App {
             self.commit_graph.clear();
             self.commit_graph_oids.clear();
             self.commit_graph_state.select(None);
+            self.commit_diff_label = None;
             return;
         }
+
+        let was_showing_commit_diff = self.commit_diff_label.is_some() && self.selected_file.is_none();
+        let prev_selected_index = self.commit_graph_state.selected();
+        let prev_selected_oid = prev_selected_index
+            .and_then(|idx| self.commit_graph_oids.get(idx))
+            .cloned();
 
         let mut lines = Vec::new();
         let mut oids = Vec::new();
@@ -473,11 +518,28 @@ impl App {
 
         self.commit_graph = lines;
         self.commit_graph_oids = oids;
-        if !self.commit_graph.is_empty() {
-            self.commit_graph_state.select(Some(0));
-            self.load_commit_diff(0);
-        } else {
+
+        if self.commit_graph.is_empty() {
             self.commit_graph_state.select(None);
+            if was_showing_commit_diff {
+                self.diff_content.clear();
+                self.commit_diff_label = None;
+            }
+            return;
+        }
+
+        let selected_idx = if let Some(oid) = prev_selected_oid {
+            self.commit_graph_oids.iter().position(|o| o == &oid).unwrap_or(0)
+        } else {
+            prev_selected_index
+                .map(|idx| idx.min(self.commit_graph.len() - 1))
+                .unwrap_or(0)
+        };
+
+        self.commit_graph_state.select(Some(selected_idx));
+
+        if was_showing_commit_diff {
+            self.load_commit_diff(selected_idx);
         }
     }
 
@@ -721,9 +783,55 @@ impl App {
         }
     }
 
+    pub fn start_pull(&mut self) {
+        if self.pull_in_progress || !self.has_git {
+            return;
+        }
+
+        self.pull_in_progress = true;
+
+        let cur_dir = self.cur_dir.clone();
+        let (tx, rx) = mpsc::channel();
+        self.pull_result_rx = Some(rx);
+
+        std::thread::spawn(move || {
+            let result = Self::pull_repo_sync(&cur_dir);
+            let _ = tx.send(result.map_err(|e| e.to_string()));
+        });
+    }
+
+    pub fn check_pull_result(&mut self) {
+        if let Some(rx) = &self.pull_result_rx {
+            if let Ok(result) = rx.try_recv() {
+                self.pull_in_progress = false;
+                self.pull_result_rx = None;
+
+                if result.is_ok() {
+                    self.scan_git();
+                    self.refresh_repository_view();
+                }
+            }
+        }
+    }
+
     fn push_repo_sync(cur_dir: &str) -> Result<(), Error> {
         let output = std::process::Command::new("git")
             .arg("push")
+            .current_dir(cur_dir)
+            .output()
+            .map_err(|e| Error::from_str(&e.to_string()))?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(Error::from_str(stderr.trim()));
+        }
+
+        Ok(())
+    }
+
+    fn pull_repo_sync(cur_dir: &str) -> Result<(), Error> {
+        let output = std::process::Command::new("git")
+            .arg("pull")
             .current_dir(cur_dir)
             .output()
             .map_err(|e| Error::from_str(&e.to_string()))?;
