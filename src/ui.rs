@@ -565,13 +565,28 @@ fn draw_commit_graph_panel(f: &mut Frame, area: ratatui::layout::Rect, app: &App
             .collect()
     };
 
+    let total = app.commit_graph.len();
+    let current = if total == 0 {
+        0
+    } else {
+        app.commit_graph_scroll + 1
+    };
+    let counter = Line::from(
+        Span::styled(
+            format!(" {} of {} ", current, total),
+            Style::default().fg(Color::DarkGray),
+        ),
+    )
+    .right_aligned();
+
     let content = Paragraph::new(graph_lines)
         .wrap(Wrap { trim: true })
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .title("Commit Graph"),
+                .title("Commit Graph")
+                .title_bottom(counter),
         )
         .style(if app.window_index == 1 {
             BORDER_STYLE
