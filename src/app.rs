@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 
 use git2::*;
+use ratatui::widgets::ListState;
 
 use crate::file_tree::FileTree;
 
@@ -36,6 +37,7 @@ pub struct App {
     pub tree: FileTree,
     pub file_statuses: HashMap<PathBuf, Status>,
     pub branches: Vec<String>,
+    pub branch_state: ListState,
     pub selected_file: Option<PathBuf>,
     pub diff_content: Vec<DiffLine>,
     pub diff_scroll: usize,
@@ -64,6 +66,7 @@ impl App {
             tree: FileTree::new(std::path::PathBuf::from(".")),
             file_statuses: HashMap::new(),
             branches: vec![],
+            branch_state: ListState::default(),
             selected_file: None,
             diff_content: vec![],
             diff_scroll: 0,
@@ -132,6 +135,9 @@ impl App {
                     {
                         app_new.branches.push(name.to_string());
                     }
+                }
+                if !app_new.branches.is_empty() {
+                    app_new.branch_state.select(Some(0));
                 }
             }
         }
@@ -268,6 +274,34 @@ impl App {
 
     pub fn diff_scroll_up(&mut self) {
         self.diff_scroll = self.diff_scroll.saturating_sub(1);
+    }
+
+    pub fn branch_next(&mut self) {
+        if self.branches.is_empty() {
+            self.branch_state.select(None);
+            return;
+        }
+
+        let next = match self.branch_state.selected() {
+            Some(index) if index + 1 < self.branches.len() => index + 1,
+            _ => 0,
+        };
+
+        self.branch_state.select(Some(next));
+    }
+
+    pub fn branch_previous(&mut self) {
+        if self.branches.is_empty() {
+            self.branch_state.select(None);
+            return;
+        }
+
+        let prev = match self.branch_state.selected() {
+            Some(0) | None => self.branches.len() - 1,
+            Some(index) => index - 1,
+        };
+
+        self.branch_state.select(Some(prev));
     }
 
     pub fn increase_window(&mut self) {

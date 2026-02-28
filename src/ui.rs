@@ -108,10 +108,7 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
             },
         );
     }
-    match app.window_index {
-        1 => app.branch_focused = true,
-        _ => {}
-    }
+    app.branch_focused = app.window_index == 1;
     draw_footer(vertical_chunks[1], app, f);
 }
 
@@ -215,13 +212,19 @@ fn draw_content(f: &mut Frame, area: ratatui::layout::Rect, app: &mut App) {
                         .border_type(BorderType::Rounded)
                         .title("[2]-Branches"),
                 )
+                .highlight_style(
+                    Style::default()
+                        .bg(Color::DarkGray)
+                        .add_modifier(Modifier::BOLD),
+                )
+                .highlight_symbol("▶ ")
                 .style(if app.window_index == 1 {
                     BORDER_STYLE
                 } else {
                     BORDER_DEFAULT_STYLE
                 });
 
-            f.render_widget(branch_list, top_cols[1]);
+            f.render_stateful_widget(branch_list, top_cols[1], &mut app.branch_state);
 
             let diff_title = match &app.selected_file {
                 Some(p) => format!("[3]-Diff — {}", p.display()),

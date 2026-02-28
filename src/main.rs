@@ -111,13 +111,12 @@ async fn main() -> io::Result<()> {
                     }
                 } else if app.branch_focused {
                     match key.code {
-                        // In this logic will be blocked to other key triggered so we need to call
-                        // this again to increase the index, so at this moment its work.
+                        KeyCode::Up => app.branch_previous(),
+                        KeyCode::Down => app.branch_next(),
                         KeyCode::Tab => {
                             app.branch_focused = false;
                             app.increase_window();
                         }
-                        // call 'q' again.
                         KeyCode::Char('q') => break,
                         _ => {}
                     }
