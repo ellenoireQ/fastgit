@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build — ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+            binary: fastgit
+
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+            binary: fastgit.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install -y cmake pkg-config libssl-dev
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package (Linux)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          mkdir -p dist
+          cp target/${{ matrix.target }}/release/${{ matrix.binary }} dist/
+          tar -czf fastgit-${{ github.ref_name }}-${{ matrix.target }}.tar.gz -C dist ${{ matrix.binary }}
+
+      - name: Package (Windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist
+          Copy-Item "target/${{ matrix.target }}/release/${{ matrix.binary }}" dist/
+          Compress-Archive -Path "dist/${{ matrix.binary }}" -DestinationPath "fastgit-${{ github.ref_name }}-${{ matrix.target }}.zip"
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: fastgit-${{ github.ref_name }}-${{ matrix.target }}.${{ matrix.archive }}
