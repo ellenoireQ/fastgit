@@ -12,6 +12,9 @@
 
 ---
 
+## Interface
+![interface_preview](docs/video/preview_interface.gif)
+
 ## Table of Contents
 
 - [Philosophy](#philosophy)
