@@ -13,7 +13,7 @@
 ---
 
 ## Interface
-![interface_preview](docs/video/preview_interface.gif)
+![interface_preview](docs/video/fastgit.gif)
 
 ## Table of Contents
 
