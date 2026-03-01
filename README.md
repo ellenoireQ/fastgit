@@ -20,7 +20,7 @@
 - [Philosophy](#philosophy)
 - [Features](#features)
 - [Installation](#installation)
-  - [Prerequisites](#prerequisites)
+  - [Download pre-built binary](#download-pre-built-binary)
   - [Build from source](#build-from-source)
   - [Run](#run)
 - [Interface](#interface)
@@ -57,11 +57,34 @@ Kill friction. Boost productivity.
 
 ## Installation
 
-### Prerequisites
+**Supported platforms:**
 
-- Rust toolchain (`cargo`). [install via rustup](https://rustup.rs)
+![Linux](https://img.shields.io/badge/Linux-x86__64-blue?logo=linux)
+![Windows](https://img.shields.io/badge/Windows-x86__64-blue?logo=windows)
+
+### Download pre-built binary
+
+Grab the latest binary from the [Releases](https://github.com/ellenoireQ/fastgit/releases) page.
+
+| Platform | File |
+|----------|------|
+| Linux | `fastgit-vX.X.X-x86_64-unknown-linux-gnu.tar.gz` |
+| Windows | `fastgit-vX.X.X-x86_64-pc-windows-msvc.zip` |
+
+**Linux:**
+```bash
+tar -xzf fastgit-vX.X.X-x86_64-unknown-linux-gnu.tar.gz
+chmod +x fastgit
+mv fastgit ~/.local/bin/
+```
+
+**Windows:**
+
+Extract the `.zip` and move `fastgit.exe` to a folder in your `PATH` (e.g. `C:\Users\you\bin\`).
 
 ### Build from source
+
+Requires Rust toolchain — [install via rustup](https://rustup.rs).
 
 ```bash
 git clone https://github.com/ellenoireQ/fastgit
@@ -69,7 +92,7 @@ cd fastgit
 cargo build --release
 ```
 
-The binary will be at `target/release/fastgit`. Add it to your `$PATH`.
+Binary will be at `target/release/fastgit` (or `fastgit.exe` on Windows). Add it to your `PATH`.
 
 ### Run
 
