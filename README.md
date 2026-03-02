@@ -22,6 +22,7 @@
 - [Installation](#installation)
   - [Download pre-built binary](#download-pre-built-binary)
   - [Build from source](#build-from-source)
+  - [Add to PATH](#add-to-path)
   - [Run](#run)
 - [Interface](#interface)
 - [Keybindings](#keybindings)
@@ -92,7 +93,38 @@ cd fastgit
 cargo build --release
 ```
 
-Binary will be at `target/release/fastgit` (or `fastgit.exe` on Windows). Add it to your `PATH`.
+Binary will be at `target/release/fastgit` (or `fastgit.exe` on Windows). Move it to a directory in your `PATH` (see [Add to PATH](#add-to-path) below).
+
+### Add to PATH
+
+If `~/.local/bin` is not yet in your `$PATH`, add it for your shell:
+
+**bash** (`~/.bashrc` or `~/.bash_profile`):
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+**zsh** (`~/.zshrc`):
+```zsh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+**fish** (`~/.config/fish/config.fish`):
+```fish
+fish_add_path $HOME/.local/bin
+```
+
+Reload your shell after editing:
+```bash
+source ~/.bashrc   # or ~/.zshrc, or restart the terminal
+```
+
+**Windows:**
+
+1. Open **System Properties** → **Advanced** → **Environment Variables**
+2. Under **User variables**, select `Path` and click **Edit**
+3. Click **New** and add the folder where you placed `fastgit.exe` (e.g. `C:\Users\you\bin`)
+4. Click **OK** and restart your terminal
 
 ### Run
 
