@@ -171,6 +171,7 @@ impl App {
             let mut paths: Vec<PathBuf> = Vec::new();
             let mut options = git2::StatusOptions::new();
             options.include_untracked(true);
+            options.recurse_untracked_dirs(true);
 
             if let Ok(statuses) = repo.statuses(Some(&mut options)) {
                 for entry in statuses.iter() {

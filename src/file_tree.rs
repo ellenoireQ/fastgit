@@ -38,6 +38,9 @@ impl FileNode {
             }
 
             let child_node = if let Some(idx) = found_idx {
+                if components.as_path().components().next().is_some() {
+                    self.children[idx].is_dir = true;
+                }
                 &mut self.children[idx]
             } else {
                 let is_dir = components.as_path().components().next().is_some();
